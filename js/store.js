@@ -37,7 +37,8 @@ function toast(msg) {
 
 const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
 const SUPABASE_CONFIG = window.APP_CONFIG || {};
-const supabaseConfigured = !!(SUPABASE_CONFIG.supabaseUrl && SUPABASE_CONFIG.supabaseAnonKey && window.supabase && window.supabase.createClient);
+const isDemoValue = value => typeof value === "string" && /example\.supabase\.co|demo-anon-key|admin@example\.com/i.test(value);
+const supabaseConfigured = !!(SUPABASE_CONFIG.supabaseUrl && SUPABASE_CONFIG.supabaseAnonKey && window.supabase && window.supabase.createClient && !isDemoValue(SUPABASE_CONFIG.supabaseUrl) && !isDemoValue(SUPABASE_CONFIG.supabaseAnonKey));
 const getSupabaseClient = () => supabaseConfigured ? window.supabase.createClient(SUPABASE_CONFIG.supabaseUrl, SUPABASE_CONFIG.supabaseAnonKey, { auth: { persistSession: true, detectSessionInUrl: true } }) : null;
 
 async function fetchStoreFromSupabase() {

@@ -11,7 +11,8 @@
 
   let W = null, tab = "overview", dirty = false;
   const APP_CONFIG = window.APP_CONFIG || {};
-  const supabaseConfigured = !!(APP_CONFIG.supabaseUrl && APP_CONFIG.supabaseAnonKey && window.supabase && window.supabase.createClient);
+  const isDemoValue = value => typeof value === "string" && /example\.supabase\.co|demo-anon-key|admin@example\.com/i.test(value);
+  const supabaseConfigured = !!(APP_CONFIG.supabaseUrl && APP_CONFIG.supabaseAnonKey && window.supabase && window.supabase.createClient && !isDemoValue(APP_CONFIG.supabaseUrl) && !isDemoValue(APP_CONFIG.supabaseAnonKey));
   const getSupabaseClient = () => supabaseConfigured ? window.supabase.createClient(APP_CONFIG.supabaseUrl, APP_CONFIG.supabaseAnonKey) : null;
 
   async function ensureSupabaseAdmin() {
