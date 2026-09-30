@@ -118,11 +118,7 @@
   function viewOverview(box) {
     const attn = W.products.map((p, i) => ({ p, i })).filter(x => Number(x.p.stock) <= 3);
     box.innerHTML = statsHTML() + `<div class="admin-panel"><div class="panel-header"><h3>Needs attention</h3><span class="status">${attn.length} item${attn.length === 1 ? "" : "s"}</span></div>
-      <div id="attn">${attn.length ? attn.map(x => stockRowHTML(x.p, x.i)).join("") : '<p class="empty">Everything is comfortably stocked.</p>'}</div></div>
-      <div class="admin-panel"><h3>Quick actions</h3><div class="admin-actions" style="margin-top:12px">
-        <button class="btn ghost small" data-go="catalog" type="button">Edit catalog</button>
-        <button class="btn ghost small" data-go="media" type="button">Change logo / reel</button>
-        <button class="btn ghost small" data-go="settings" type="button">WhatsApp &amp; banner</button></div></div>`;
+      <div id="attn">${attn.length ? attn.map(x => stockRowHTML(x.p, x.i)).join("") : '<p class="empty">Everything is comfortably stocked.</p>'}</div></div>`;
     bindStockRows($("attn"));
   }
 
@@ -223,8 +219,8 @@
       <div class="field"><label for="fTagline">Hero tagline</label><input id="fTagline" value="${esc(W.tagline)}"></div>
       <div class="field"><label for="fAnnounce">Announcement banner (leave blank to hide)</label><input id="fAnnounce" placeholder="e.g. New drop this Saturday" value="${esc(W.announcement || "")}"></div>
       <p class="sub">Every WhatsApp button on the site (hero, contact page, footer, floating button, order buttons) uses this number.</p></div>
-      <div class="admin-panel"><h3>Reset</h3><p class="sub">Replace the published catalog and settings with the bundled defaults.</p>
-      <button class="btn ghost small" id="resetBtn" type="button">Restore bundled defaults</button></div>`;
+      <div class="settings-reset"><div><b>Restore defaults</b><p class="sub">Replace the live catalog and settings with the bundled defaults.</p></div>
+      <button class="btn ghost small" id="resetBtn" type="button">Restore</button></div>`;
     $("fWhatsapp").oninput = e => { W.whatsapp = e.target.value; touch(); };
     $("fTagline").oninput = e => { W.tagline = e.target.value; touch(); };
     $("fAnnounce").oninput = e => { W.announcement = e.target.value; touch(); };
