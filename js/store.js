@@ -127,7 +127,9 @@ function renderAll() {
   const reelWrap = $("reelWrap"), rv = $("reelV");
   if (reelWrap && rv) {
     const u = mediaURL(DATA.reel);
+    rv.autoplay = true; rv.muted = true; rv.loop = true; rv.playsInline = true; rv.setAttribute("playsinline", "true"); rv.setAttribute("muted", "true"); rv.setAttribute("loop", "true"); rv.setAttribute("autoplay", "true");
     if (u) { if (rv.getAttribute("src") !== u) rv.src = u; reelWrap.style.display = "block"; } else { rv.removeAttribute("src"); reelWrap.style.display = "none"; }
+    rv.play().catch(() => {});
   }
   if ($("grid")) { renderFilters(); renderGrid(); }
 }
