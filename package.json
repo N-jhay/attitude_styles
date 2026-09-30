@@ -1,0 +1,17 @@
+{
+  "name": "attitude-styles-store",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "dev": "python3 -m http.server 8000",
+    "deploy": "echo 'Deploy to Netlify: connect repo, set build command npm run build, publish dir dist'",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.55.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.40.0"
+  }
+}
