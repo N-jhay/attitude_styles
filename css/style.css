@@ -238,6 +238,9 @@ footer{border-top:1px solid var(--line);padding:26px 0 calc(24px + env(safe-area
 .social-link.tiktok:hover{color:var(--ink);border-color:var(--ink);background:color-mix(in srgb,var(--ink) 7%,var(--bg))}
 .social-link.instagram:hover{color:#c24f68;border-color:#c24f68;background:color-mix(in srgb,#c24f68 8%,var(--bg))}
 .social-link.snapchat:hover{color:#887000;border-color:#e1c900;background:color-mix(in srgb,#ffe500 18%,var(--bg))}
+.fgrid{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px 24px}
+.fgrid #secretAdmin{justify-self:start}
+.fgrid .social-links{justify-self:end}
 .admin-layout{border-radius:12px;box-shadow:0 12px 28px var(--shadow)}
 .admin-sidebar{gap:14px;padding:20px 16px}
 .nav-section{border-color:transparent;border-left:2px solid transparent;border-radius:4px;padding:9px 12px}
@@ -256,7 +259,7 @@ footer{border-top:1px solid var(--line);padding:26px 0 calc(24px + env(safe-area
 .settings-reset b{font-size:13px}
 .settings-reset .sub{margin:3px 0 0}
 @media(max-width:980px){.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:14px}.stat-card:nth-child(2){border-right:0}.stat-card:nth-child(3){padding-left:0}}
-@media(max-width:600px){.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat-card{padding:4px 12px}.stat-card:nth-child(odd){padding-left:0}.stat-card:nth-child(even){border-right:0}.admin-topbar{align-items:flex-start}.admin-actions{width:100%}.admin-actions .btn{flex:1}.fgrid{justify-content:center;text-align:center}.social-links{width:100%;order:3}.settings-reset{align-items:flex-start}.nav-icon-btn{width:34px;height:34px;min-width:34px}.bagbtn{height:34px;min-width:54px}}
+@media(max-width:600px){.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat-card{padding:4px 12px}.stat-card:nth-child(odd){padding-left:0}.stat-card:nth-child(even){border-right:0}.admin-topbar{align-items:flex-start}.admin-actions{width:100%}.admin-actions .btn{flex:1}.fgrid{grid-template-columns:1fr;justify-items:center;text-align:center;gap:14px}.fgrid #secretAdmin,.fgrid .social-links{justify-self:center}.fgrid .social-links{width:auto}.settings-reset{align-items:flex-start}.nav-icon-btn{width:34px;height:34px;min-width:34px}.bagbtn{height:34px;min-width:54px}}
 .qty button:disabled{opacity:.35;cursor:not-allowed}
 .admin-nav{flex-direction:column}
 .veil[data-static]{align-items:flex-start;padding:24px 12px}
