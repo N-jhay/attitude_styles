@@ -119,6 +119,11 @@ function renderCommon() {
     else bar.style.display = "none";
   }
   const tag = $("heroTag"); if (tag) tag.textContent = DATA.tagline;
+  const about = DATA.about || DEFAULTS.about;
+  const aboutTitle = $("aboutTitle"), aboutBody = $("aboutBody"), aboutHighlights = $("aboutHighlights");
+  if (aboutTitle) aboutTitle.textContent = about.title;
+  if (aboutBody) aboutBody.textContent = about.body;
+  if (aboutHighlights) aboutHighlights.innerHTML = about.highlights.map(item => `<div class="stat"><b>${esc(item.title)}</b><span>${esc(item.text)}</span></div>`).join("");
   updCount();
 }
 

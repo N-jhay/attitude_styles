@@ -232,8 +232,27 @@
     };
   }
 
-  const VIEWS = { overview: viewOverview, catalog: viewCatalog, inventory: viewInventory, media: viewMedia, settings: viewSettings };
-  const TITLES = { overview: "Admin overview", catalog: "Catalog", inventory: "Inventory", media: "Logo & media", settings: "Settings" };
+  function viewAbout(box) {
+    const about = W.about || (W.about = clone(S.DEFAULTS.about));
+    box.innerHTML = `<div class="admin-panel"><h3>About the brand</h3>
+      <div class="field"><label for="aboutTitleInput">Section heading</label><input id="aboutTitleInput" maxlength="100" value="${esc(about.title)}"></div>
+      <div class="field"><label for="aboutBodyInput">Brand story</label><textarea id="aboutBodyInput" rows="5" maxlength="2000">${esc(about.body)}</textarea></div>
+      <h3>Highlights</h3>
+      <div id="aboutHighlightFields"></div></div>`;
+    $("aboutTitleInput").oninput = e => { about.title = e.target.value; touch(); };
+    $("aboutBodyInput").oninput = e => { about.body = e.target.value; touch(); };
+    $("aboutHighlightFields").innerHTML = about.highlights.map((item, index) => `<div class="admin-grid">
+      <div class="field"><label for="aboutHighlightTitle${index}">Highlight ${index + 1} title</label><input id="aboutHighlightTitle${index}" maxlength="80" value="${esc(item.title)}"></div>
+      <div class="field"><label for="aboutHighlightText${index}">Highlight ${index + 1} text</label><input id="aboutHighlightText${index}" maxlength="180" value="${esc(item.text)}"></div>
+      </div>`).join("");
+    about.highlights.forEach((item, index) => {
+      $("aboutHighlightTitle" + index).oninput = e => { item.title = e.target.value; touch(); };
+      $("aboutHighlightText" + index).oninput = e => { item.text = e.target.value; touch(); };
+    });
+  }
+
+  const VIEWS = { overview: viewOverview, catalog: viewCatalog, inventory: viewInventory, media: viewMedia, about: viewAbout, settings: viewSettings };
+  const TITLES = { overview: "Admin overview", catalog: "Catalog", inventory: "Inventory", media: "Logo & media", about: "About the brand", settings: "Settings" };
   function renderView() {
     const box = $("adminView"); if (!box) return;
     document.querySelectorAll(".nav-section").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));

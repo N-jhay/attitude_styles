@@ -6,6 +6,13 @@ function validStore(data) {
   if (!Array.isArray(data.products) || data.products.length > 300) return false;
   if (typeof data.whatsapp !== "string" || !/^\d{8,15}$/.test(data.whatsapp)) return false;
   if (typeof data.tagline !== "string" || data.tagline.length > 300) return false;
+  if (data.about != null && (!data.about || typeof data.about !== "object" || Array.isArray(data.about)
+    || typeof data.about.title !== "string" || data.about.title.length > 100
+    || typeof data.about.body !== "string" || data.about.body.length > 2000
+    || !Array.isArray(data.about.highlights) || data.about.highlights.length !== 3
+    || data.about.highlights.some(item => !item || typeof item !== "object" || Array.isArray(item)
+      || typeof item.title !== "string" || item.title.length > 80
+      || typeof item.text !== "string" || item.text.length > 180))) return false;
   if (typeof (data.announcement || "") !== "string" || (data.announcement || "").length > 300) return false;
   if (typeof (data.logo || "") !== "string" || (data.logo || "").length > 2048) return false;
   if (typeof (data.reel || "") !== "string" || (data.reel || "").length > 2048) return false;

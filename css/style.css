@@ -130,8 +130,9 @@ footer{border-top:1px solid var(--line);padding:26px 0 calc(24px + env(safe-area
 .sub{color:var(--soft);font-size:12.5px;margin:2px 0 16px}
 .field{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
 .field label{font-size:12px;color:var(--soft);font-weight:700}
-.field input{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 11px;border-radius:calc(var(--r) * 0.5);font:inherit;font-size:13.5px}
-.field input:focus{border-color:color-mix(in srgb, var(--gold) 70%, var(--line));box-shadow:0 0 0 3px color-mix(in srgb, var(--gold) 16%, transparent)}
+.field input,.field textarea{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 11px;border-radius:calc(var(--r) * 0.5);font:inherit;font-size:13.5px}
+.field textarea{resize:vertical;min-height:120px}
+.field input:focus,.field textarea:focus{border-color:color-mix(in srgb, var(--gold) 70%, var(--line));box-shadow:0 0 0 3px color-mix(in srgb, var(--gold) 16%, transparent)}
 .admin-layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:80vh;background:var(--panel);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 22px 50px var(--shadow)}
 .admin-sidebar{background:linear-gradient(180deg, color-mix(in srgb, var(--card) 95%, var(--bg)), var(--alt));border-right:1px solid var(--line);padding:24px 18px;display:flex;flex-direction:column;gap:18px}
 .admin-brand-wrap{display:flex;align-items:center;gap:12px;padding-bottom:8px}
@@ -212,7 +213,7 @@ footer{border-top:1px solid var(--line);padding:26px 0 calc(24px + env(safe-area
 .admin-logo{width:46px;height:46px;object-fit:contain;flex:none}
 .admin-view{display:flex;flex-direction:column;gap:18px;min-width:0}
 .admin-panel .sub{margin-bottom:10px}
-.admin-panel .field input{width:100%}
+.admin-panel .field input,.admin-panel .field textarea{width:100%}
 .admin-panel code{background:var(--alt);padding:1px 6px;border-radius:6px;font-size:12px}
 .srow{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .srow:last-child{border-bottom:0}

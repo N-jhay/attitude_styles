@@ -15,6 +15,15 @@ const CAP_DIMS = { "One size": "Fits 54-60 cm head" };
 window.STORE_DATA = {
   whatsapp: "2347063972297", // digits only, country code, no +
   tagline: "Streetwear built on confidence. Limited drops, made for people who carry their own crown.",
+  about: {
+    title: "The Standard",
+    body: "Attitude Styles is a streetwear label for people who move with intention. Every crest-marked piece is made in small batches, so what's in stock is what's real. When something sells out, it stays out until the next drop.",
+    highlights: [
+      { title: "Small Batch", text: "Limited units per drop, restocked rarely" },
+      { title: "DM to Cop", text: "Every order confirmed on WhatsApp — pick color & size first" },
+      { title: "Nationwide", text: "Delivery arranged on order" },
+    ],
+  },
   announcement: "", // e.g. "New drop this Saturday — message us to reserve". Leave blank to hide the banner.
   reel: "https://res.cloudinary.com/duw8lbca7/video/upload/v1785713601/steezywurld/vgcowhqwullba1vucwd3.mp4",
   logo: "assets/logo.png",
