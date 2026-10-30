@@ -6,7 +6,24 @@ export function json(data, status = 200, headers = {}) {
 }
 
 export function sameOrigin(request) {
-  return request.headers.get("Origin") === new URL(request.url).origin;
+  const origin = request.headers.get("Origin");
+  const requestUrl = new URL(request.url);
+
+  if (origin) return origin === requestUrl.origin;
+
+  const site = request.headers.get("Sec-Fetch-Site");
+  if (site === "same-origin" || site === "same-site") return true;
+
+  const referer = request.headers.get("Referer");
+  if (referer) {
+    try {
+      return new URL(referer).origin === requestUrl.origin;
+    } catch {
+      // Ignore malformed referers and fall through to the safe default.
+    }
+  }
+
+  return false;
 }
 
 export function error(message, status = 400) {
