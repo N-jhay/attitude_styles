@@ -13,7 +13,7 @@ const config = `window.APP_CONFIG = {
   adminAllowedEmails: ${JSON.stringify(adminAllowedEmails)},
 };\n`;
 
-const publicPaths = ["index.html", "shop", "about", "contact", "admin", "assets", "css", "js", "_headers"];
+const publicPaths = ["index.html", "shop", "about", "gallery", "contact", "admin", "assets", "css", "js", "_headers"];
 
 rmSync("dist", { recursive: true, force: true });
 mkdirSync("dist", { recursive: true });
