@@ -92,6 +92,7 @@ async function resetToDefaults() {
 /* ---------- Rendering ---------- */
 const isDefaultLogo = () => !DATA.logo || DATA.logo === DEFAULTS.logo;
 let activeCat = "All", query = "", cart = [], cur = null, sel = {};
+let galleryLightboxImages = [], galleryLightboxIndex = 0;
 
 function stockInfo(p) {
   if (Number(p.stock) <= 0) return { cls: "out", label: "Sold out", line: "Sold out \u2014 ask about restock" };
@@ -140,9 +141,36 @@ function renderGallery() {
   const gallerySubtitle = $("gallerySubtitle");
   if (galleryTitle && DATA.gallery && DATA.gallery.title) galleryTitle.textContent = DATA.gallery.title;
   if (gallerySubtitle && DATA.gallery && DATA.gallery.subtitle) gallerySubtitle.textContent = DATA.gallery.subtitle;
-  gallery.innerHTML = source.map((image, index) => `<figure class="gallery-card" aria-label="Gallery image ${index + 1}">
-    <img src="${esc(mediaURL(image) || PH)}" alt="Attitude Styles gallery shot ${index + 1}" loading="lazy" decoding="async" onerror="imgFallback(this)">
+  galleryLightboxImages = source.map(image => mediaURL(image) || PH);
+  gallery.innerHTML = galleryLightboxImages.map((image, index) => `<figure class="gallery-card">
+    <button class="gallery-card__view" type="button" data-gallery-view="${index}" aria-label="View gallery image ${index + 1}">
+      <img src="${esc(image)}" alt="Attitude Styles gallery shot ${index + 1}" loading="lazy" decoding="async" onerror="imgFallback(this)">
+      <span class="gallery-card__hint" aria-hidden="true">View image</span>
+    </button>
   </figure>`).join("");
+  if (!$("galleryLightbox")) {
+    const dialog = document.createElement("dialog");
+    dialog.id = "galleryLightbox";
+    dialog.className = "gallery-lightbox";
+    dialog.setAttribute("aria-label", "Gallery image viewer");
+    dialog.innerHTML = `<button class="gallery-lightbox__close" type="button" data-gallery-close aria-label="Close image viewer">&times;</button>
+      <button class="gallery-lightbox__nav gallery-lightbox__prev" type="button" data-gallery-step="-1" aria-label="Previous image">&#8249;</button>
+      <img class="gallery-lightbox__image" alt="">
+      <button class="gallery-lightbox__nav gallery-lightbox__next" type="button" data-gallery-step="1" aria-label="Next image">&#8250;</button>
+      <span class="gallery-lightbox__count" aria-live="polite"></span>`;
+    document.body.appendChild(dialog);
+  }
+}
+
+function showGalleryLightbox(index) {
+  const dialog = $("galleryLightbox");
+  if (!dialog || !galleryLightboxImages.length) return;
+  galleryLightboxIndex = (index + galleryLightboxImages.length) % galleryLightboxImages.length;
+  const image = dialog.querySelector(".gallery-lightbox__image");
+  image.src = galleryLightboxImages[galleryLightboxIndex];
+  image.alt = `Attitude Styles gallery shot ${galleryLightboxIndex + 1}`;
+  dialog.querySelector(".gallery-lightbox__count").textContent = `${galleryLightboxIndex + 1} / ${galleryLightboxImages.length}`;
+  if (!dialog.open) dialog.showModal();
 }
 
 function renderProductPage() {
@@ -311,6 +339,12 @@ function drawProduct() {
 
 document.addEventListener("click", e => {
   const el = e.target;
+  const galleryView = el.closest && el.closest("[data-gallery-view]");
+  if (galleryView) { showGalleryLightbox(Number(galleryView.dataset.galleryView)); return; }
+  const galleryClose = el.closest && el.closest("[data-gallery-close]");
+  if (galleryClose) { $("galleryLightbox").close(); return; }
+  const galleryStep = el.closest && el.closest("[data-gallery-step]");
+  if (galleryStep) { showGalleryLightbox(galleryLightboxIndex + Number(galleryStep.dataset.galleryStep)); return; }
   if (el.classList && el.classList.contains("veil")) { if (!el.hasAttribute("data-static")) el.classList.remove("open"); return; }
   const t = el.closest && el.closest("[data-col],[data-sz],[data-q],[data-add],[data-close],[data-rm],[data-reel]");
   if (!t) return;
@@ -324,6 +358,10 @@ document.addEventListener("click", e => {
   else if (d.rm !== undefined) { e.preventDefault(); cart.splice(Number(d.rm), 1); saveCart(); updCount(); drawBag(); }
 });
 document.addEventListener("keydown", e => {
+  if ($("galleryLightbox")?.open) {
+    if (e.key === "ArrowRight") { e.preventDefault(); showGalleryLightbox(galleryLightboxIndex + 1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); showGalleryLightbox(galleryLightboxIndex - 1); }
+  }
   if (e.key === "Escape") document.querySelectorAll(".veil:not([data-static])").forEach(v => v.classList.remove("open"));
 });
 
