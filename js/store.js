@@ -153,10 +153,10 @@ function renderGallery() {
     dialog.id = "galleryLightbox";
     dialog.className = "gallery-lightbox";
     dialog.setAttribute("aria-label", "Gallery image viewer");
-    dialog.innerHTML = `<button class="gallery-lightbox__close" type="button" data-gallery-close aria-label="Close image viewer">&times;</button>
-      <button class="gallery-lightbox__nav gallery-lightbox__prev" type="button" data-gallery-step="-1" aria-label="Previous image">&#8249;</button>
+    dialog.innerHTML = `<button class="gallery-lightbox__close" type="button" data-gallery-close aria-label="Close image viewer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+      <button class="gallery-lightbox__nav gallery-lightbox__prev" type="button" data-gallery-step="-1" aria-label="Previous image"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
       <img class="gallery-lightbox__image" alt="">
-      <button class="gallery-lightbox__nav gallery-lightbox__next" type="button" data-gallery-step="1" aria-label="Next image">&#8250;</button>
+      <button class="gallery-lightbox__nav gallery-lightbox__next" type="button" data-gallery-step="1" aria-label="Next image"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
       <span class="gallery-lightbox__count" aria-live="polite"></span>`;
     document.body.appendChild(dialog);
   }
