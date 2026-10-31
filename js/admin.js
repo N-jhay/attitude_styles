@@ -10,6 +10,7 @@
   const PH = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#8884"/></svg>');
 
   let W = null, tab = "overview", dirty = false;
+  let expandedProducts = new Set();
   const APP_CONFIG = window.APP_CONFIG || {};
   const isDemoValue = value => typeof value === "string" && /example\.supabase\.co|demo-anon-key|admin@example\.com/i.test(value);
   const supabaseConfigured = !!(APP_CONFIG.supabaseUrl && APP_CONFIG.supabaseAnonKey && window.supabase && window.supabase.createClient && !isDemoValue(APP_CONFIG.supabaseUrl) && !isDemoValue(APP_CONFIG.supabaseAnonKey));
@@ -129,48 +130,63 @@
   }
 
   function viewCatalog(box) {
-    box.innerHTML = `<div class="admin-panel"><div class="panel-header"><h3>Merch catalog</h3><button class="btn ghost small" id="addProductBtn" type="button">+ Add merch</button></div><div id="adminProducts"></div></div>`;
+    box.innerHTML = `<div class="admin-panel"><div class="panel-header"><div><h3>Merch catalog</h3><p class="sub">Edit product details and imagery. Changes go live when saved.</p></div><button class="btn ghost small" id="addProductBtn" type="button">Add product</button></div><div id="adminProducts"></div></div>`;
     $("addProductBtn").onclick = () => {
-      W.products.unshift({ id: Date.now(), name: "New item", cat: "General", price: 0, stock: 0, colors: [], sizes: ["One size"], dims: {}, img: "" });
+      const product = { id: Date.now(), name: "New item", cat: "General", price: 0, stock: 0, colors: [], sizes: ["One size"], dims: {}, img: "" };
+      W.products.unshift(product);
+      expandedProducts.add(String(product.id));
       touch(); renderView();
     };
     const wrap = $("adminProducts");
     if (!W.products.length) wrap.innerHTML = '<p class="empty">No products yet \u2014 add your first one.</p>';
     W.products.forEach((p, idx) => {
       const row = document.createElement("div"); row.className = "prow";
-      row.innerHTML = `<div class="top">
+      row.innerHTML = `<details class="product-editor" data-product-id="${esc(String(p.id))}" ${expandedProducts.has(String(p.id)) ? "open" : ""}>
+        <summary class="product-summary">
+          <img src="${esc(S.mediaURL(p.img) || PH)}" alt="" onerror="imgFallback(this)">
+          <span class="product-summary__info"><strong data-role="summary-name">${esc(p.name || "Untitled")}</strong><span data-role="summary-meta">${esc(p.cat)} \u00b7 ${S.fmt(p.price)}</span></span>
+          <span data-role="summary-stock">${pill(p)}</span>
+          <svg class="product-summary__chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <div class="product-editor__body"><div class="top">
         <div class="media-stack"><img data-role="thumb" src="${esc(S.mediaURL(p.img) || PH)}" alt="" onerror="imgFallback(this)">
-          <label class="filebtn-label">Upload photo<input type="file" accept="image/jpeg,image/png,image/webp" class="filebtn" data-role="img-file"></label></div>
+          <label class="filebtn-label">Upload listing image<input type="file" accept="image/jpeg,image/png,image/webp" class="filebtn" data-role="img-file"></label></div>
         <div class="fields">
-          <input data-f="name" placeholder="Name" value="${esc(p.name)}" aria-label="Name">
-          <input data-f="cat" placeholder="Category" value="${esc(p.cat)}" aria-label="Category">
-          <input data-f="price" placeholder="Price (\u20a6)" type="number" min="0" value="${Number(p.price) || 0}" aria-label="Price">
-          <input data-f="stock" placeholder="Stock" type="number" min="0" value="${Number(p.stock) || 0}" aria-label="Stock">
-          <input class="full2" data-f="colors" placeholder="Colors: Name:#hex, Name:#hex" value="${esc(colorsToStr(p.colors))}" aria-label="Colors">
-          <input class="full2" data-f="sizes" placeholder="Sizes: S, M, L, XL" value="${esc((p.sizes || []).join(", "))}" aria-label="Sizes">
-          <input class="full2" data-f="img" placeholder="Photo link (or upload a photo on the left)" value="${esc(refValue(p.img))}" aria-label="Photo link">
-          <input class="full2" data-f="description" placeholder="Product story / copy" value="${esc(refValue(p.description))}" aria-label="Product description">
-          <div class="full2 upload-row">
-            <input data-f="frontImg" placeholder="Front mockup link" value="${esc(refValue(p.frontImg || p.img))}" aria-label="Front mockup link">
+          <label class="field"><span>Product name</span><input data-f="name" placeholder="e.g. Graphic cotton tee" value="${esc(p.name)}" aria-label="Name"></label>
+          <label class="field"><span>Category</span><input data-f="cat" placeholder="e.g. Tees" value="${esc(p.cat)}" aria-label="Category"></label>
+          <label class="field"><span>Price (\u20a6)</span><input data-f="price" placeholder="0" type="number" min="0" value="${Number(p.price) || 0}" aria-label="Price"></label>
+          <label class="field"><span>Stock quantity</span><input data-f="stock" placeholder="0" type="number" min="0" value="${Number(p.stock) || 0}" aria-label="Stock"></label>
+          <label class="field full2"><span>Available colours</span><input data-f="colors" placeholder="Name:#hex, Name:#hex" value="${esc(colorsToStr(p.colors))}" aria-label="Colors"></label>
+          <label class="field full2"><span>Available sizes</span><input data-f="sizes" placeholder="S, M, L, XL" value="${esc((p.sizes || []).join(", "))}" aria-label="Sizes"></label>
+          <label class="field full2"><span>Listing image URL</span><input data-f="img" placeholder="Paste an image URL or use Upload listing image" value="${esc(refValue(p.img))}" aria-label="Photo link"></label>
+          <label class="field full2"><span>Product description</span><textarea data-f="description" rows="3" placeholder="Short product details" aria-label="Product description">${esc(refValue(p.description))}</textarea></label>
+          <div class="full2 admin-media-field">
+            <label class="field"><span>Front mockup URL</span><input data-f="frontImg" placeholder="Front image URL" value="${esc(refValue(p.frontImg || p.img))}" aria-label="Front mockup link"></label>
             <label class="filebtn-label">Front image<input type="file" accept="image/jpeg,image/png,image/webp" class="filebtn" data-role="front-file"></label>
           </div>
-          <div class="full2 upload-row">
-            <input data-f="backImg" placeholder="Back mockup link" value="${esc(refValue(p.backImg || p.img))}" aria-label="Back mockup link">
+          <div class="full2 admin-media-field">
+            <label class="field"><span>Back mockup URL</span><input data-f="backImg" placeholder="Back image URL" value="${esc(refValue(p.backImg || p.img))}" aria-label="Back mockup link"></label>
             <label class="filebtn-label">Back image<input type="file" accept="image/jpeg,image/png,image/webp" class="filebtn" data-role="back-file"></label>
           </div>
-          <input class="full2" data-f="modelShots" placeholder="Model image links, comma separated" value="${esc(refValue((p.modelShots || []).join(", ")))}" aria-label="Model shot links">
-          <div class="full2 upload-row">
-            <input data-f="video" placeholder="Video link (optional) or upload \u2192" value="${esc(refValue(p.videoUrl))}" aria-label="Video link">
+          <label class="field full2"><span>Model shot image URLs</span><input data-f="modelShots" placeholder="Paste image links, separated by commas" value="${esc(refValue((p.modelShots || []).join(", ")))}" aria-label="Model shot links"></label>
+          <div class="full2 admin-media-field">
+            <label class="field"><span>Product video URL</span><input data-f="video" placeholder="Optional video link" value="${esc(refValue(p.videoUrl))}" aria-label="Video link"></label>
             <label class="filebtn-label">Upload video<input type="file" accept="video/*" class="filebtn" data-role="video-file"></label>
           </div>
           <video class="mini-video" data-role="vprev" controls playsinline preload="metadata" ${p.videoUrl ? `src="${esc(S.mediaURL(p.videoUrl))}"` : 'style="display:none"'}></video>
         </div></div>
-        <div class="rowbtns">${p.videoUrl ? '<button class="del" data-role="rmvideo" type="button">Remove video</button>' : ""}<button class="del" data-role="del" type="button">Remove product</button></div>`;
+        <div class="rowbtns">${p.videoUrl ? '<button class="del" data-role="rmvideo" type="button">Remove video</button>' : ""}<button class="del" data-role="del" type="button">Remove product</button></div></div></details>`;
       const q = s => row.querySelector(s);
-      q('[data-f=name]').oninput = e => { p.name = e.target.value; touch(); };
-      q('[data-f=cat]').oninput = e => { p.cat = e.target.value; touch(); };
-      q('[data-f=price]').oninput = e => { p.price = Math.max(0, Number(e.target.value) || 0); touch(); };
-      q('[data-f=stock]').oninput = e => { p.stock = Math.max(0, Math.floor(Number(e.target.value) || 0)); touch(); };
+      const editor = q(".product-editor");
+      editor.addEventListener("toggle", () => {
+        if (editor.open) expandedProducts.add(String(p.id));
+        else expandedProducts.delete(String(p.id));
+      });
+      q('[data-f=name]').oninput = e => { p.name = e.target.value; q('[data-role=summary-name]').textContent = p.name || "Untitled"; touch(); };
+      const updateSummaryMeta = () => { q('[data-role=summary-meta]').textContent = (p.cat || "General") + " \u00b7 " + S.fmt(p.price); };
+      q('[data-f=cat]').oninput = e => { p.cat = e.target.value; updateSummaryMeta(); touch(); };
+      q('[data-f=price]').oninput = e => { p.price = Math.max(0, Number(e.target.value) || 0); updateSummaryMeta(); touch(); };
+      q('[data-f=stock]').oninput = e => { p.stock = Math.max(0, Math.floor(Number(e.target.value) || 0)); q('[data-role=summary-stock]').innerHTML = pill(p); touch(); };
       q('[data-f=colors]').oninput = e => { p.colors = strToColors(e.target.value); touch(); };
       q('[data-f=sizes]').oninput = e => { p.sizes = e.target.value.split(",").map(s => s.trim()).filter(Boolean); if (!p.sizes.length) p.sizes = ["One size"]; touch(); };
       q('[data-f=img]').oninput = e => { p.img = e.target.value.trim(); q('[data-role=thumb]').src = S.mediaURL(p.img) || PH; touch(); };
@@ -192,7 +208,7 @@
         guard("Uploading video\u2026", async () => { p.videoUrl = await uploadVideo(f); touch(); renderView(); S.toast("Video added \u2014 remember to Save."); });
       };
       const rv = q('[data-role=rmvideo]'); if (rv) rv.onclick = () => { p.videoUrl = undefined; touch(); renderView(); };
-      q('[data-role=del]').onclick = () => { if (confirm('Remove "' + (p.name || "this product") + '"?')) { W.products.splice(idx, 1); touch(); renderView(); } };
+      q('[data-role=del]').onclick = () => { if (confirm('Remove "' + (p.name || "this product") + '"?')) { expandedProducts.delete(String(p.id)); W.products.splice(idx, 1); touch(); renderView(); } };
       wrap.appendChild(row);
     });
   }
@@ -328,6 +344,12 @@
   const TITLES = { overview: "Admin overview", catalog: "Catalog", inventory: "Inventory", media: "Logo & media", about: "About the brand", gallery: "Gallery", settings: "Settings" };
   function renderView() {
     const box = $("adminView"); if (!box) return;
+    box.querySelectorAll(".product-editor").forEach(editor => {
+      expandedProducts.delete(editor.dataset.productId);
+      if (editor.open) expandedProducts.add(editor.dataset.productId);
+    });
+    const productIds = new Set(W.products.map(product => String(product.id)));
+    expandedProducts.forEach(id => { if (!productIds.has(id)) expandedProducts.delete(id); });
     document.querySelectorAll(".nav-section").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
     const h = $("adminTitle"); if (h) h.textContent = TITLES[tab];
     VIEWS[tab](box);
@@ -391,7 +413,11 @@
         <div id="adminView" class="admin-view"></div>
         <div class="save-row"><span id="saveStatus" class="status"></span></div>
       </main></div>`;
-    document.querySelectorAll(".nav-section").forEach(b => b.onclick = () => { tab = b.dataset.tab; renderView(); const m = document.querySelector(".admin-main"); if (m) m.scrollIntoView({ block: "start" }); });
+    document.querySelectorAll(".nav-section").forEach(b => b.onclick = () => {
+      tab = b.dataset.tab; renderView();
+      const m = document.querySelector(".admin-main");
+      if (m && window.matchMedia("(min-width:981px)").matches) m.scrollIntoView({ block: "start" });
+    });
     $("saveBtn").onclick = () => guard("Saving changes\u2026", save);
     $("closeAdminBtn").onclick = closeAdmin;
     $("lockBtn").onclick = async () => {
@@ -404,7 +430,7 @@
     const lg = document.querySelector(".admin-logo");
     if (lg) { lg.onerror = () => { lg.onerror = null; lg.src = S.ROOT + "assets/logo.png"; lg.setAttribute("data-invert", "1"); };
       if (S.data.logo === S.DEFAULTS.logo || !S.mediaURL(S.data.logo)) { lg.src = S.ROOT + "assets/logo.png"; lg.setAttribute("data-invert", "1"); } else lg.src = S.mediaURL(S.data.logo); }
-    tab = "overview"; renderView();
+    tab = "overview"; expandedProducts = new Set(); renderView();
     $("av").classList.add("open");
   }
 

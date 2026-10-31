@@ -185,7 +185,7 @@ function renderProductPage() {
         <span class="eyebrow">Back mockup</span>
         <img src="${esc(mediaURL(back) || PH)}" alt="${esc(product.name)} back mockup" onerror="imgFallback(this)">
       </div>
-      ${modelShots.map((shot, index) => `<div class="product-gallery-card wide"><span class="eyebrow">Model shot ${index + 1}</span><img src="${esc(mediaURL(shot) || PH)}" alt="${esc(product.name)} model shot ${index + 1}" onerror="imgFallback(this)"></div>`).join("")}
+      ${modelShots.map((shot, index) => `<div class="product-gallery-card model-shot-card"><span class="eyebrow">Model shot ${index + 1}</span><img src="${esc(mediaURL(shot) || PH)}" alt="${esc(product.name)} model shot ${index + 1}" loading="lazy" onerror="imgFallback(this)"></div>`).join("")}
     </div>
   </section>`;
 }
@@ -202,6 +202,28 @@ function renderAll() {
   if ($("grid")) { renderFilters(); renderGrid(); }
   if ($("galleryGrid")) renderGallery();
   if ($("productDetail")) renderProductPage();
+  observeRevealMotion();
+}
+
+const revealMotionObserver = window.IntersectionObserver && !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ? new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      entry.target.dataset.reveal = "visible";
+      revealMotionObserver.unobserve(entry.target);
+    });
+  }, { threshold: 0.08, rootMargin: "0px 0px -32px 0px" })
+  : null;
+
+function observeRevealMotion() {
+  if (!revealMotionObserver) return;
+  const targets = document.querySelectorAll(".hero,.reel,#shop,.brand-hero,.gallery-header,.gallery-card,.product-page-hero,.product-gallery-card,.contact-card");
+  targets.forEach((element, index) => {
+    if (element.dataset.reveal) return;
+    element.dataset.reveal = "pending";
+    element.style.setProperty("--reveal-delay", `${Math.min(index % 6, 5) * 55}ms`);
+    revealMotionObserver.observe(element);
+  });
 }
 
 function renderFilters() {
