@@ -406,7 +406,7 @@ function addToCart() {
 function addCurrentToBag() {
   addToCart();
   $("pv").classList.remove("open");
-  drawBag(); $("bv").classList.add("open");
+  toast(`${sel.q} ${sel.q === 1 ? "item" : "items"} added to your bag.`);
 }
 function updCount() { const c = $("cnt"); if (c) c.textContent = cart.reduce((a, l) => a + l.q, 0); }
 const findP = l => DATA.products.find(x => x.id === l.pid);
