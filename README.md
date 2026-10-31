@@ -14,6 +14,11 @@ server (`python3 -m http.server`, VS Code Live Server, Netlify, etc.) and open `
 ## WhatsApp
 Every WhatsApp link is driven by the stored `whatsapp` number in the catalog.
 
+## Performance and media
+Product image uploads are resized and encoded as WebP where supported; transparent logos remain PNG.
+Gallery images are optimized for their on-page display size, and the homepage reel loads and plays
+only near the viewport. Static assets use a short revalidation-friendly cache policy.
+
 ## Netlify + Supabase deployment
 This project is now set up for a Netlify-hosted static storefront with a real Supabase-backed admin.
 The public site remains static, while admin login and catalog persistence move to Supabase Auth + DB.

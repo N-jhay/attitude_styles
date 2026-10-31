@@ -51,7 +51,17 @@
         const g = c.getContext("2d");
         if (!keepAlpha) { g.fillStyle = "#fff"; g.fillRect(0, 0, w, h); }
         g.drawImage(img, 0, 0, w, h);
-        c.toBlob(b => { URL.revokeObjectURL(url); b ? resolve(b) : reject(new Error("encode failed")); }, keepAlpha ? "image/png" : "image/jpeg", 0.86);
+        const outputType = keepAlpha ? "image/png" : "image/webp";
+        c.toBlob(blob => {
+          URL.revokeObjectURL(url);
+          if (blob && (keepAlpha || blob.type === "image/webp")) {
+            resolve(blob);
+          } else if (!keepAlpha) {
+            c.toBlob(fallback => fallback ? resolve(fallback) : reject(new Error("Image encoding failed.")), "image/jpeg", 0.82);
+          } else {
+            reject(new Error("Image encoding failed."));
+          }
+        }, outputType, 0.82);
       };
       img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("not an image")); };
       img.src = url;
@@ -168,7 +178,11 @@
             <label class="field"><span>Back mockup URL</span><input data-f="backImg" placeholder="Back image URL" value="${esc(refValue(p.backImg || p.img))}" aria-label="Back mockup link"></label>
             <label class="filebtn-label">Back image<input type="file" accept="image/jpeg,image/png,image/webp" class="filebtn" data-role="back-file"></label>
           </div>
-          <label class="field full2"><span>Model shot image URLs</span><input data-f="modelShots" placeholder="Paste image links, separated by commas" value="${esc(refValue((p.modelShots || []).join(", ")))}" aria-label="Model shot links"></label>
+          <div class="field full2 model-shots-field"><span>Model shots</span>
+            <input data-f="modelShots" placeholder="Paste image links, separated by commas" value="${esc(refValue((p.modelShots || []).join(", ")))}" aria-label="Model shot links">
+            <label class="filebtn-label">Upload model shots<input type="file" accept="image/jpeg,image/png,image/webp" class="filebtn" data-role="model-shots-file" multiple></label>
+            <div class="model-shot-previews" data-role="model-shot-previews"></div>
+          </div>
           <div class="full2 admin-media-field">
             <label class="field"><span>Product video URL</span><input data-f="video" placeholder="Optional video link" value="${esc(refValue(p.videoUrl))}" aria-label="Video link"></label>
             <label class="filebtn-label">Upload video<input type="file" accept="video/*" class="filebtn" data-role="video-file"></label>
@@ -193,7 +207,39 @@
       q('[data-f=description]').oninput = e => { p.description = e.target.value.trim(); touch(); };
       q('[data-f=frontImg]').oninput = e => { p.frontImg = e.target.value.trim() || p.img; touch(); };
       q('[data-f=backImg]').oninput = e => { p.backImg = e.target.value.trim() || p.img; touch(); };
-      q('[data-f=modelShots]').oninput = e => { p.modelShots = e.target.value.split(",").map(v => v.trim()).filter(Boolean); touch(); };
+      const renderModelShotPreviews = () => {
+        const previews = q('[data-role=model-shot-previews]');
+        previews.innerHTML = (p.modelShots || []).map((src, shotIndex) => `<div class="model-shot-preview">
+          <img src="${esc(S.mediaURL(src) || PH)}" alt="Model shot ${shotIndex + 1}" onerror="imgFallback(this)">
+          <button class="del" type="button" data-role="remove-model-shot" data-shot-index="${shotIndex}" aria-label="Remove model shot ${shotIndex + 1}">Remove</button>
+        </div>`).join("");
+        previews.querySelectorAll('[data-role=remove-model-shot]').forEach(button => {
+          button.onclick = () => {
+            p.modelShots.splice(Number(button.dataset.shotIndex), 1);
+            q('[data-f=modelShots]').value = p.modelShots.join(", ");
+            touch();
+            renderModelShotPreviews();
+          };
+        });
+      };
+      q('[data-f=modelShots]').oninput = e => {
+        p.modelShots = e.target.value.split(",").map(v => v.trim()).filter(Boolean);
+        touch();
+        renderModelShotPreviews();
+      };
+      q('[data-role=model-shots-file]').onchange = e => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+        guard("Uploading model shots\u2026", async () => {
+          const uploaded = [];
+          for (const file of files) uploaded.push(await uploadImage(file, 1200, false));
+          p.modelShots = [...(p.modelShots || []), ...uploaded];
+          touch();
+          renderView();
+          S.toast(`${uploaded.length} model shot${uploaded.length === 1 ? "" : "s"} added \u2014 remember to Save.`);
+        });
+      };
+      renderModelShotPreviews();
       q('[data-f=video]').oninput = e => {
         p.videoUrl = e.target.value.trim() || undefined;
         const v = q('[data-role=vprev]');

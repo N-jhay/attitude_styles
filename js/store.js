@@ -141,7 +141,7 @@ function renderGallery() {
   if (galleryTitle && DATA.gallery && DATA.gallery.title) galleryTitle.textContent = DATA.gallery.title;
   if (gallerySubtitle && DATA.gallery && DATA.gallery.subtitle) gallerySubtitle.textContent = DATA.gallery.subtitle;
   gallery.innerHTML = source.map((image, index) => `<figure class="gallery-card" aria-label="Gallery image ${index + 1}">
-    <img src="${esc(mediaURL(image) || PH)}" alt="Attitude Styles gallery shot ${index + 1}" loading="lazy" onerror="imgFallback(this)">
+    <img src="${esc(mediaURL(image) || PH)}" alt="Attitude Styles gallery shot ${index + 1}" loading="lazy" decoding="async" onerror="imgFallback(this)">
   </figure>`).join("");
 }
 
@@ -161,7 +161,7 @@ function renderProductPage() {
   detail.innerHTML = `<section class="product-page-wrap">
     <div class="product-page-hero">
       <div class="product-page-media">
-        <img src="${esc(mediaURL(front) || PH)}" alt="${esc(product.name)} front" onerror="imgFallback(this)">
+        <img src="${esc(mediaURL(front) || PH)}" alt="${esc(product.name)} front" fetchpriority="high" decoding="async" onerror="imgFallback(this)">
       </div>
       <div class="product-page-info">
         <span class="eyebrow">${esc(product.cat)}</span>
@@ -179,13 +179,13 @@ function renderProductPage() {
     <div class="product-gallery-grid">
       <div class="product-gallery-card">
         <span class="eyebrow">Front mockup</span>
-        <img src="${esc(mediaURL(front) || PH)}" alt="${esc(product.name)} front mockup" onerror="imgFallback(this)">
+        <img src="${esc(mediaURL(front) || PH)}" alt="${esc(product.name)} front mockup" loading="lazy" decoding="async" onerror="imgFallback(this)">
       </div>
       <div class="product-gallery-card">
         <span class="eyebrow">Back mockup</span>
-        <img src="${esc(mediaURL(back) || PH)}" alt="${esc(product.name)} back mockup" onerror="imgFallback(this)">
+        <img src="${esc(mediaURL(back) || PH)}" alt="${esc(product.name)} back mockup" loading="lazy" decoding="async" onerror="imgFallback(this)">
       </div>
-      ${modelShots.map((shot, index) => `<div class="product-gallery-card model-shot-card"><img src="${esc(mediaURL(shot) || PH)}" alt="${esc(product.name)} model shot ${index + 1}" loading="lazy" onerror="imgFallback(this)"></div>`).join("")}
+      ${modelShots.map((shot, index) => `<div class="product-gallery-card model-shot-card"><img src="${esc(mediaURL(shot) || PH)}" alt="${esc(product.name)} model shot ${index + 1}" loading="lazy" decoding="async" onerror="imgFallback(this)"></div>`).join("")}
     </div>
   </section>`;
 }
@@ -195,9 +195,20 @@ function renderAll() {
   const reelWrap = $("reelWrap"), rv = $("reelV");
   if (reelWrap && rv) {
     const u = mediaURL(DATA.reel);
-    rv.autoplay = true; rv.muted = true; rv.loop = true; rv.playsInline = true; rv.setAttribute("playsinline", "true"); rv.setAttribute("muted", "true"); rv.setAttribute("loop", "true"); rv.setAttribute("autoplay", "true");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    rv.autoplay = false; rv.preload = "none"; rv.muted = true; rv.loop = true; rv.playsInline = true; rv.controls = reducedMotion;
+    rv.setAttribute("playsinline", "true"); rv.setAttribute("muted", "true"); rv.setAttribute("loop", "true");
     if (u) { if (rv.getAttribute("src") !== u) rv.src = u; reelWrap.style.display = "block"; } else { rv.removeAttribute("src"); reelWrap.style.display = "none"; }
-    rv.play().catch(() => {});
+    if (u && !reducedMotion && "IntersectionObserver" in window) {
+      if (rv._visibilityObserver) rv._visibilityObserver.disconnect();
+      rv._visibilityObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) rv.play().catch(() => {});
+          else rv.pause();
+        });
+      }, { rootMargin: "160px 0px" });
+      rv._visibilityObserver.observe(rv);
+    } else if (u && !reducedMotion) rv.play().catch(() => {});
   }
   if ($("grid")) { renderFilters(); renderGrid(); }
   if ($("galleryGrid")) renderGallery();
@@ -253,7 +264,7 @@ function renderGrid() {
   items.forEach(p => {
     const s = stockInfo(p), out = Number(p.stock) <= 0;
     const card = document.createElement("button"); card.className = "card"; card.type = "button";
-    card.innerHTML = `<div class="sw"><span class="tag ${s.cls}">${s.label}</span><img src="${esc(mediaURL(p.img) || PH)}" alt="${esc(p.name)}" loading="lazy" onerror="imgFallback(this)">
+    card.innerHTML = `<div class="sw"><span class="tag ${s.cls}">${s.label}</span><img src="${esc(mediaURL(p.img) || PH)}" alt="${esc(p.name)}" loading="lazy" decoding="async" onerror="imgFallback(this)">
       <div class="glaze"><span>${out ? "Ask about restock" : "Choose color &amp; size"}</span></div></div>
       <div class="cb"><span class="cat">${esc(p.cat)}</span><h3>${esc(p.name)}</h3><span class="price">${fmt(p.price)}</span>
       <div class="dots">${(p.colors || []).map(c => `<span class="dot" style="background:${esc(c[1])}" title="${esc(c[0])}"></span>`).join("")}</div>
@@ -403,27 +414,32 @@ if (themeToggle) {
 
 /* ---------- Boot ---------- */
 async function init() {
-  try {
-    const response = await withTimeout(fetch(ROOT + "api/store", { cache: "no-store" }), 5000);
-    if (response.ok) {
-      const result = await response.json();
-      if (result.data && Array.isArray(result.data.products)) {
-        DATA = Object.assign({}, JSON.parse(JSON.stringify(DEFAULTS)), result.data);
-        window.STORE_DATA = DATA;
-      }
-    }
-  } catch (e) { /* fall back to data.js */ }
-  try {
-    if (supabaseConfigured) {
+  loadCart();
+  renderAll();
+  let updated = false;
+  if (supabaseConfigured) {
+    try {
       const remote = await fetchStoreFromSupabase();
       if (remote && Array.isArray(remote.products)) {
         DATA = Object.assign({}, JSON.parse(JSON.stringify(DEFAULTS)), remote);
         window.STORE_DATA = DATA;
+        updated = true;
       }
-    }
-  } catch (e) { /* fall back to data.js */ }
-  loadCart();
-  renderAll();
+    } catch (e) { /* fall back to data.js */ }
+  } else {
+    try {
+      const response = await withTimeout(fetch(ROOT + "api/store", { cache: "no-store" }), 5000);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.data && Array.isArray(result.data.products)) {
+          DATA = Object.assign({}, JSON.parse(JSON.stringify(DEFAULTS)), result.data);
+          window.STORE_DATA = DATA;
+          updated = true;
+        }
+      }
+    } catch (e) { /* fall back to data.js */ }
+  }
+  if (updated) renderAll();
   if ($("storeSearchInput") && /[?&]search=1/.test(location.search)) $("storeSearchInput").focus();
 }
 
