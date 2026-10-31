@@ -185,7 +185,7 @@ function renderProductPage() {
         <span class="eyebrow">Back mockup</span>
         <img src="${esc(mediaURL(back) || PH)}" alt="${esc(product.name)} back mockup" onerror="imgFallback(this)">
       </div>
-      ${modelShots.map((shot, index) => `<div class="product-gallery-card model-shot-card"><span class="eyebrow">Model shot ${index + 1}</span><img src="${esc(mediaURL(shot) || PH)}" alt="${esc(product.name)} model shot ${index + 1}" loading="lazy" onerror="imgFallback(this)"></div>`).join("")}
+      ${modelShots.map((shot, index) => `<div class="product-gallery-card model-shot-card"><img src="${esc(mediaURL(shot) || PH)}" alt="${esc(product.name)} model shot ${index + 1}" loading="lazy" onerror="imgFallback(this)"></div>`).join("")}
     </div>
   </section>`;
 }
@@ -217,7 +217,7 @@ const revealMotionObserver = window.IntersectionObserver && !window.matchMedia("
 
 function observeRevealMotion() {
   if (!revealMotionObserver) return;
-  const targets = document.querySelectorAll(".hero,.reel,#shop,.brand-hero,.gallery-header,.gallery-card,.product-page-hero,.product-gallery-card,.contact-card");
+  const targets = document.querySelectorAll(".hero,.reel,section,.card,#site-footer,.brand-hero,.gallery-header,.gallery-card,.product-page-hero,.product-gallery-card,.contact-card");
   targets.forEach((element, index) => {
     if (element.dataset.reveal) return;
     element.dataset.reveal = "pending";
@@ -235,7 +235,7 @@ function renderFilters() {
   cats.forEach(c => {
     const b = document.createElement("button"); b.className = "chip"; b.type = "button"; b.textContent = c;
     b.setAttribute("aria-pressed", c === activeCat ? "true" : "false");
-    b.onclick = () => { activeCat = c; renderFilters(); renderGrid(); };
+    b.onclick = () => { activeCat = c; renderFilters(); renderGrid(); observeRevealMotion(); };
     row.appendChild(b);
   });
   const inp = document.createElement("input"); inp.id = "storeSearchInput"; inp.className = "search";
