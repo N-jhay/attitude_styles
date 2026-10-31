@@ -8,11 +8,19 @@ server (`python3 -m http.server`, VS Code Live Server, Netlify, etc.) and open `
 - `admin/index.html` — admin dashboard (triple-click the footer copyright text)
 - `js/data.js` — bundled default catalog and settings
 - `js/store.js` — shop rendering and cart logic
+- `js/checkout-message.js` — WhatsApp order message formatting
 - `js/admin.js` — admin UI and save logic
+- `supabase/migrations/` — database changes for protected admin features
 - `assets/` — site media and product photos
 
 ## WhatsApp
-Every WhatsApp link is driven by the stored `whatsapp` number in the catalog.
+Every WhatsApp link is driven by the stored `whatsapp` number in the catalog. Customers can review
+their bag, add optional delivery contact details, and open a prefilled WhatsApp order. Availability,
+delivery fees, and payment are confirmed in the chat; an item is not reserved by sending a message.
+
+The admin Orders section is a manual log for orders confirmed in WhatsApp. It stores customer
+contact/order details in a separate admin-only Supabase table; WhatsApp messages are not read by
+the site, and stock is adjusted manually in Inventory after confirming an order.
 
 ## Performance and media
 Product image uploads are resized and encoded as WebP where supported; transparent logos remain PNG.
@@ -31,6 +39,8 @@ npm install
 
 ### 2. Configure Supabase
 Create a Supabase project and apply the SQL from `supabase/schema.sql`.
+For the secure manual order log, also apply `supabase/migrations/0002_manual_orders.sql` in the
+Supabase SQL editor. This creates a separate table protected by admin-only row-level security.
 Set the project values as environment variables in Netlify:
 
 ```sh

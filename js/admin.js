@@ -310,6 +310,112 @@
     };
   }
 
+  function orderStatusLabel(status) {
+    return ({ confirmed: "Confirmed", fulfilled: "Fulfilled", cancelled: "Cancelled" })[status] || status;
+  }
+
+  async function refreshOrders(box, notice = "") {
+    const list = $("ordersList"), feedback = $("ordersFeedback");
+    if (!list || !feedback) return;
+    if (!supabaseConfigured) {
+      list.innerHTML = '<p class="empty">The secure order log is unavailable until Supabase is configured.</p>';
+      feedback.textContent = "Configure Supabase and apply the manual-orders migration to enable this feature.";
+      return;
+    }
+
+    try {
+      const { data, error } = await getSupabaseClient()
+        .from("manual_orders")
+        .select("id, customer_name, customer_phone, delivery_address, city_state, order_summary, total_amount, status, created_at")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      if (tab !== "orders" || !$("ordersList")) return;
+      list.innerHTML = data.length ? data.map(order => `<article class="order-record">
+        <div class="order-record__header"><div><b>${esc(order.customer_name)}</b><small>${esc(order.customer_phone)} \u00b7 ${new Date(order.created_at).toLocaleString()}</small></div>
+          <strong>${S.fmt(order.total_amount)}</strong></div>
+        <div class="order-record__meta">${[order.delivery_address, order.city_state].filter(Boolean).map(esc).join(" \u00b7 ") || "No delivery details recorded"}</div>
+        <p class="order-record__summary">${esc(order.order_summary)}</p>
+        <label class="order-record__status">Order status
+          <select data-order-status="${esc(order.id)}" aria-label="Status for order ${esc(order.id)}">
+            ${["confirmed", "fulfilled", "cancelled"].map(status => `<option value="${status}" ${status === order.status ? "selected" : ""}>${orderStatusLabel(status)}</option>`).join("")}
+          </select>
+        </label>
+      </article>`).join("") : '<p class="empty">No confirmed orders logged yet.</p>';
+      feedback.textContent = notice || `${data.length} recent order${data.length === 1 ? "" : "s"}.`;
+    } catch (error) {
+      list.innerHTML = '<p class="empty">Could not load the order log.</p>';
+      feedback.textContent = error.message || "Could not load the order log.";
+    }
+  }
+
+  function viewOrders(box) {
+    box.innerHTML = `<div class="admin-panel"><div class="panel-header"><div><h3>Confirmed WhatsApp orders</h3>
+      <p class="sub">Log an order after confirming it with the customer in WhatsApp. Customer details are stored in the admin-only Supabase order table.</p></div></div>
+      <div class="order-policy"><b>Stock is not reserved by a WhatsApp message.</b> After confirming the order, adjust inventory separately in the Inventory section.</div>
+      <form id="orderLogForm" class="order-log-form">
+        <div class="admin-grid">
+          <div class="field"><label for="orderCustomer">Customer name</label><input id="orderCustomer" maxlength="120" required></div>
+          <div class="field"><label for="orderPhone">Phone number</label><input id="orderPhone" type="tel" maxlength="40" required></div>
+          <div class="field"><label for="orderAddress">Delivery address</label><input id="orderAddress" maxlength="300"></div>
+          <div class="field"><label for="orderCity">City / State</label><input id="orderCity" maxlength="120"></div>
+          <div class="field"><label for="orderTotal">Confirmed order total (\u20a6)</label><input id="orderTotal" type="number" min="0" max="1000000000" step="0.01" required></div>
+        </div>
+        <div class="field"><label for="orderSummary">Items and variants (paste or summarize the confirmed WhatsApp order)</label><textarea id="orderSummary" rows="4" maxlength="5000" required></textarea></div>
+        <div class="admin-actions"><button class="btn gold" type="submit">Log confirmed order</button><span id="ordersFeedback" class="status" role="status" aria-live="polite"></span></div>
+      </form>
+    </div>
+    <div class="admin-panel"><div class="panel-header"><h3>Recent orders</h3><span class="status">Last 100</span></div><div id="ordersList"><p class="empty">Loading orders\u2026</p></div></div>`;
+
+    const form = $("orderLogForm");
+    form.onsubmit = async event => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      const feedback = $("ordersFeedback");
+      feedback.textContent = "Saving confirmed order\u2026";
+      try {
+        const client = getSupabaseClient();
+        const { data: userData, error: userError } = await client.auth.getUser();
+        if (userError) throw userError;
+        const { error } = await client.from("manual_orders").insert({
+          customer_name: $("orderCustomer").value.trim(),
+          customer_phone: $("orderPhone").value.trim(),
+          delivery_address: $("orderAddress").value.trim(),
+          city_state: $("orderCity").value.trim(),
+          order_summary: $("orderSummary").value.trim(),
+          total_amount: Number($("orderTotal").value),
+          status: "confirmed",
+          created_by: userData.user ? userData.user.id : null,
+        });
+        if (error) throw error;
+        form.reset();
+        await refreshOrders(box, "Confirmed order logged.");
+      } catch (error) {
+        feedback.textContent = error.message || "Could not save the confirmed order.";
+      }
+    };
+
+    $("ordersList").onchange = async event => {
+      const select = event.target.closest("[data-order-status]");
+      if (!select) return;
+      select.disabled = true;
+      const feedback = $("ordersFeedback");
+      feedback.textContent = "Updating order status\u2026";
+      try {
+        const { error } = await getSupabaseClient().from("manual_orders")
+          .update({ status: select.value, updated_at: new Date().toISOString() })
+          .eq("id", select.dataset.orderStatus);
+        if (error) throw error;
+        await refreshOrders(box, "Order status updated.");
+      } catch (error) {
+        feedback.textContent = error.message || "Could not update order status.";
+        select.disabled = false;
+      }
+    };
+
+    refreshOrders(box);
+  }
+
   function viewAbout(box) {
     const about = W.about || (W.about = clone(S.DEFAULTS.about));
     box.innerHTML = `<div class="admin-panel"><h3>About the brand</h3>
@@ -386,8 +492,8 @@
     renderImages();
   }
 
-  const VIEWS = { overview: viewOverview, catalog: viewCatalog, inventory: viewInventory, media: viewMedia, about: viewAbout, gallery: viewGallery, settings: viewSettings };
-  const TITLES = { overview: "Admin overview", catalog: "Catalog", inventory: "Inventory", media: "Logo & media", about: "About the brand", gallery: "Gallery", settings: "Settings" };
+  const VIEWS = { overview: viewOverview, catalog: viewCatalog, inventory: viewInventory, orders: viewOrders, media: viewMedia, about: viewAbout, gallery: viewGallery, settings: viewSettings };
+  const TITLES = { overview: "Admin overview", catalog: "Catalog", inventory: "Inventory", orders: "Orders", media: "Logo & media", about: "About the brand", gallery: "Gallery", settings: "Settings" };
   function renderView() {
     const box = $("adminView"); if (!box) return;
     box.querySelectorAll(".product-editor").forEach(editor => {

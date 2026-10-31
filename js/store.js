@@ -407,25 +407,43 @@ const findP = l => DATA.products.find(x => x.id === l.pid);
 const lineTotal = l => (findP(l) ? findP(l).price : 0) * l.q;
 const bagTotal = () => cart.reduce((a, l) => a + lineTotal(l), 0);
 function msgBag() {
-  const nm = $("nm") ? $("nm").value.trim() : "", ct = $("ct") ? $("ct").value.trim() : "";
-  const lines = cart.map((l, i) => {
-    const p = findP(l), d = dims(p, l.s);
-    return `${i + 1}. *${p.name}*\n   Type: ${p.cat}\n   Color: ${l.c}\n   Size: ${l.s}${d ? ` (${d})` : ""}\n   Qty: ${l.q} x ${fmt(p.price)} = ${fmt(p.price * l.q)}`;
-  }).join("\n\n");
-  return `Hello Attitude Styles! I'd like to order:\n\n${lines}\n\n*Total: ${fmt(bagTotal())}*${nm ? `\nName: ${nm}` : ""}${ct ? `\nCity/State: ${ct}` : ""}\n\nPlease confirm availability and payment details.`;
+  return window.buildCheckoutMessage({
+    lines: cart.map(line => {
+      const product = findP(line);
+      return {
+        product: { name: product.name, category: product.cat, price: fmt(product.price) },
+        color: line.c,
+        size: line.s,
+        dimension: dims(product, line.s),
+        quantity: line.q,
+        total: fmt(lineTotal(line)),
+      };
+    }),
+    total: fmt(bagTotal()),
+    name: $("nm") ? $("nm").value.trim() : "",
+    phone: $("phone") ? $("phone").value.trim() : "",
+    address: $("address") ? $("address").value.trim() : "",
+    city: $("ct") ? $("ct").value.trim() : "",
+  });
 }
 function drawBag() {
   const shell = $("bs"); if (!shell) return;
   cart = cart.filter(l => findP(l));
-  const keep = { n: $("nm") ? $("nm").value : "", c: $("ct") ? $("ct").value : "" };
+  const keep = {
+    name: $("nm") ? $("nm").value : "",
+    phone: $("phone") ? $("phone").value : "",
+    address: $("address") ? $("address").value : "",
+    city: $("ct") ? $("ct").value : "",
+  };
   shell.innerHTML = `<button class="x" data-close="bv" aria-label="Close" type="button">\u2715</button><div class="pb"><h2>Your bag</h2>` +
     (cart.length ? cart.map((l, i) => { const p = findP(l); return `<div class="line"><div><b>${esc(p.name)}</b><small>${esc(l.c)} \u00b7 ${esc(l.s)} \u00b7 Qty ${l.q}</small><a href="#" data-rm="${i}">Remove</a></div><b>${fmt(lineTotal(l))}</b></div>`; }).join("") +
       `<div class="tot"><span>Total</span><span>${fmt(bagTotal())}</span></div>
-   <div class="f"><input id="nm" placeholder="Your name (optional)" value="${esc(keep.n)}"><input id="ct" placeholder="City / State (optional)" value="${esc(keep.c)}"></div>
+   <div class="checkout-note">Availability, delivery fee, and payment are confirmed with you on WhatsApp. Items are not reserved until confirmed.</div>
+   <div class="f"><input id="nm" autocomplete="name" placeholder="Your name (optional)" value="${esc(keep.name)}"><input id="phone" type="tel" autocomplete="tel" placeholder="Phone number (optional)" value="${esc(keep.phone)}"><input id="address" autocomplete="street-address" placeholder="Delivery address (optional)" value="${esc(keep.address)}"><input id="ct" autocomplete="address-level2" placeholder="City / State (optional)" value="${esc(keep.city)}"></div>
    <a class="btn gold full" id="wb" target="_blank" rel="noopener" href="${wa(msgBag())}">Order on WhatsApp</a>`
       : `<div class="empty">Your bag is empty.</div>`) + `</div>`;
   const wb = $("wb");
-  if (wb) ["nm", "ct"].forEach(i => { $(i).oninput = () => { wb.href = wa(msgBag()); }; });
+  if (wb) ["nm", "phone", "address", "ct"].forEach(i => { $(i).oninput = () => { wb.href = wa(msgBag()); }; });
 }
 const bagBtn = $("bagBtn");
 if (bagBtn) bagBtn.onclick = () => { drawBag(); $("bv").classList.add("open"); };
