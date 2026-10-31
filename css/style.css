@@ -72,8 +72,6 @@ section{padding:36px 0}
 .card:hover .glaze,.card:focus-within .glaze{transform:translateY(0)}
 @media(hover:none){.glaze{display:none}}
 .viewbtn{margin-top:auto;padding-top:8px;border:0;background:none;text-align:left;font-weight:700;font-size:12.5px;color:var(--gold)}
-.card-actions{padding:0 12px 12px}
-.card-actions .full{min-height:40px;margin-top:0;padding:9px 12px;font-size:13px}
 .empty{color:var(--soft);padding:20px 0}
 .reel{margin:16px 0 6px}
 .vid{background:var(--alt);border:1px solid var(--line);border-radius:var(--r);aspect-ratio:16/9;max-height:480px;overflow:hidden}

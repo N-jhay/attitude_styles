@@ -306,14 +306,10 @@ function renderGrid() {
     const s = stockInfo(p), out = Number(p.stock) <= 0;
     const card = document.createElement("article"); card.className = "card";
     card.innerHTML = `<a class="card-link" href="${ROOT}shop/product.html?id=${encodeURIComponent(p.id)}"><div class="sw"><span class="tag ${s.cls}">${s.label}</span><img src="${esc(mediaURL(p.img) || PH)}" alt="${esc(p.name)}" loading="lazy" decoding="async" onerror="imgFallback(this)">
-      <div class="glaze"><span>${out ? "Ask about restock" : "Choose color &amp; size"}</span></div></div>
+      <div class="glaze"><span>${out ? "View restock options" : "View product &amp; mockups"}</span></div></div>
       <div class="cb"><span class="cat">${esc(p.cat)}</span><h3>${esc(p.name)}</h3><span class="price">${fmt(p.price)}</span>
       <div class="dots">${(p.colors || []).map(c => `<span class="dot" style="background:${esc(c[1])}" title="${esc(c[0])}"></span>`).join("")}</div>
-      <span class="stockline">${s.line}</span><span class="viewbtn">View details \u2192</span></div></a>
-      <div class="card-actions">${out
-        ? `<button class="btn ghost full" type="button" data-restock="${encodeURIComponent(p.id)}">Ask about restock</button>`
-        : `<button class="btn gold full" type="button" data-quick-add="${encodeURIComponent(p.id)}">Add to bag</button>`}
-      </div>`;
+      <span class="stockline">${s.line}</span><span class="viewbtn">View product &amp; mockups \u2192</span></div></a>`;
     grid.appendChild(card);
   });
   const ss = $("stockSummary");
@@ -348,8 +344,6 @@ function drawProduct() {
 
 document.addEventListener("click", e => {
   const el = e.target;
-  const quickAdd = el.closest && el.closest("[data-quick-add]");
-  if (quickAdd) { openProduct(Number(quickAdd.dataset.quickAdd)); return; }
   const restock = el.closest && el.closest("[data-restock]");
   if (restock) {
     const product = DATA.products.find(p => p.id === Number(restock.dataset.restock));
