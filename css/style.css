@@ -52,11 +52,13 @@ section{padding:36px 0}
 .search:focus{border-color:color-mix(in srgb, var(--gold) 70%, var(--line));box-shadow:0 0 0 3px color-mix(in srgb, var(--gold) 18%, transparent)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;text-align:left;padding:0;transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
-.card:hover,.card:focus-visible{transform:translateY(-4px);box-shadow:0 14px 30px rgba(20,15,8,.16);border-color:transparent}
-:root[data-theme="dark"] .card:hover,:root[data-theme="dark"] .card:focus-visible{box-shadow:0 14px 30px rgba(0,0,0,.45)}
+.card:hover,.card:focus-within{transform:translateY(-4px);box-shadow:0 14px 30px rgba(20,15,8,.16);border-color:transparent}
+:root[data-theme="dark"] .card:hover,:root[data-theme="dark"] .card:focus-within{box-shadow:0 14px 30px rgba(0,0,0,.45)}
+.card-link{display:flex;flex:1;flex-direction:column;min-width:0;color:inherit;text-decoration:none}
+.card-link:focus-visible{outline-offset:-3px}
 .sw{aspect-ratio:1;position:relative;overflow:hidden;background:var(--alt);border-bottom:1px solid var(--line)}
 .sw img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease}
-.card:hover .sw img,.card:focus-visible .sw img{transform:scale(1.07)}
+.card:hover .sw img,.card:focus-within .sw img{transform:scale(1.07)}
 .tag{position:absolute;top:7px;left:7px;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:12px;color:#fff;z-index:2;white-space:nowrap}
 .tag.in{background:var(--good)}.tag.low{background:var(--amber);color:#181008}.tag.out{background:var(--bad)}
 .cb{padding:11px 12px 13px;display:flex;flex-direction:column;gap:3px;flex:1}
@@ -67,9 +69,11 @@ section{padding:36px 0}
 .dot{width:12px;height:12px;border-radius:50%;border:1px solid var(--line);flex:none}
 .stockline{font-size:11.5px;color:var(--soft)}
 .glaze{position:absolute;left:0;right:0;bottom:0;padding:10px 12px;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(20,17,12,.38);backdrop-filter:blur(10px) saturate(160%);-webkit-backdrop-filter:blur(10px) saturate(160%);border-top:1px solid rgba(255,255,255,.22);color:#fff;font-size:12px;font-weight:700;letter-spacing:.01em;transform:translateY(100%);transition:transform .28s ease;z-index:2}
-.card:hover .glaze,.card:focus-visible .glaze{transform:translateY(0)}
+.card:hover .glaze,.card:focus-within .glaze{transform:translateY(0)}
 @media(hover:none){.glaze{display:none}}
 .viewbtn{margin-top:auto;padding-top:8px;border:0;background:none;text-align:left;font-weight:700;font-size:12.5px;color:var(--gold)}
+.card-actions{padding:0 12px 12px}
+.card-actions .full{min-height:40px;margin-top:0;padding:9px 12px;font-size:13px}
 .empty{color:var(--soft);padding:20px 0}
 .reel{margin:16px 0 6px}
 .vid{background:var(--alt);border:1px solid var(--line);border-radius:var(--r);aspect-ratio:16/9;max-height:480px;overflow:hidden}
@@ -444,10 +448,10 @@ section{padding:56px 0}
 .search{border-radius:7px;padding:9px 12px;font-size:14px}
 .grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr));gap:26px 18px}
 .card{overflow:visible;background:transparent;border:0;border-radius:0;box-shadow:none}
-.card:hover,.card:focus-visible{transform:none;box-shadow:none}
+.card:hover,.card:focus-within{transform:none;box-shadow:none}
 .sw{aspect-ratio:4/5;border:0;border-radius:5px;background:var(--alt)}
 .sw img{border-radius:5px;transition:transform .28s ease}
-.card:hover .sw img,.card:focus-visible .sw img{transform:scale(1.025)}
+.card:hover .sw img,.card:focus-within .sw img{transform:scale(1.025)}
 .tag{top:10px;left:10px;border-radius:4px;padding:4px 8px;font-size:11px}
 .glaze{display:none}
 .cb{gap:5px;padding:12px 0 0}
@@ -689,7 +693,7 @@ footer{padding:28px 0 calc(28px + env(safe-area-inset-bottom,0px));font-size:13p
 .bagbtn:hover,.bagbtn:focus-visible{border-color:color-mix(in srgb,var(--gold) 55%,var(--line));background:color-mix(in srgb,var(--gold) 8%,var(--card))}
 .bagbtn svg{width:16px;height:16px;flex:none;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .card{overflow:hidden;padding:7px;border:1px solid var(--line);border-radius:14px;background:var(--card);box-shadow:0 4px 14px color-mix(in srgb,var(--shadow) 55%,transparent);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
-.card:hover,.card:focus-visible{transform:translateY(-3px);border-color:color-mix(in srgb,var(--gold) 28%,var(--line));box-shadow:0 12px 26px var(--shadow)}
+.card:hover,.card:focus-within{transform:translateY(-3px);border-color:color-mix(in srgb,var(--gold) 28%,var(--line));box-shadow:0 12px 26px var(--shadow)}
 .sw,.sw img{border-radius:10px}
 .cb{padding:10px 4px 5px}
 .tag{border-radius:7px}

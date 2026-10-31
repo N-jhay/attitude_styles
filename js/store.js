@@ -182,10 +182,15 @@ function renderProductPage() {
     detail.innerHTML = '<div class="empty">This product is no longer available.</div>';
     return;
   }
+  if (!cur || cur.id !== product.id || !sel.s) {
+    cur = product;
+    sel = { c: (product.colors && product.colors[0]) || ["Standard", ""], s: (product.sizes && product.sizes[0]) || "One size", q: 1, reel: false };
+  } else cur = product;
   const front = product.frontImg || product.img;
   const back = product.backImg || product.img;
   const modelShots = Array.isArray(product.modelShots) && product.modelShots.length ? product.modelShots : [product.img];
   const details = (product.dims && Object.entries(product.dims).map(([size, value]) => `<li><span>${esc(size)}</span><strong>${esc(value)}</strong></li>`).join("")) || "";
+  const out = Number(product.stock) <= 0, maxQ = Math.max(1, Number(product.stock) || 1);
   detail.innerHTML = `<section class="product-page-wrap">
     <div class="product-page-hero">
       <div class="product-page-media">
@@ -194,11 +199,19 @@ function renderProductPage() {
       <div class="product-page-info">
         <span class="eyebrow">${esc(product.cat)}</span>
         <h1>${esc(product.name)}</h1>
-        <div class="price large">${fmt(product.price)}</div>
+        <div class="price large" id="productPagePrice">${fmt(product.price * sel.q)}</div>
         <p>${esc(product.description || "Built for confidence, movement, and everyday wear.")}</p>
-        <div class="swatch-row">${(product.colors || []).map(c => `<span class="swatch" title="${esc(c[0])}" style="background:${esc(c[1])}"></span>`).join("") || '<span class="swatch empty"></span>'}</div>
+        <div class="lab">Color: ${esc(sel.c[0])}</div>
+        <div class="swrow">${(product.colors || []).map(c => `<button type="button" style="background:${esc(c[1])}" aria-label="${esc(c[0])}" aria-pressed="${c[0] === sel.c[0]}" data-col="${esc(c[0])}"></button>`).join("")}</div>
+        <div class="lab">Size</div>
+        <div class="szrow">${(product.sizes || ["One size"]).map(size => `<button type="button" aria-pressed="${size === sel.s}" data-sz="${esc(size)}">${esc(size)}</button>`).join("")}</div>
+        <div class="dim">${esc(dims(product, sel.s))}</div>
+        <div class="lab">Quantity</div>
+        <div class="qty"><button type="button" data-q="-1" aria-label="Decrease quantity">\u2212</button><span>${sel.q}</span><button type="button" data-q="1" aria-label="Increase quantity" ${sel.q >= maxQ ? "disabled" : ""}>+</button></div>
         <div class="product-actions">
-          <a class="btn gold" data-wa="Hi Attitude Styles! I'd like to order the ${esc(product.name)}." target="_blank" rel="noopener">Order on WhatsApp</a>
+          ${out
+    ? `<button class="btn gold" type="button" data-restock="${product.id}">Ask about restock</button>`
+    : `<button class="btn gold" type="button" data-add="1">Add to bag</button>`}
           <a class="btn ghost" href="${ROOT}shop/index.html">Back to shop</a>
         </div>
         <ul class="product-specs">${details}</ul>
@@ -291,15 +304,16 @@ function renderGrid() {
   grid.innerHTML = items.length ? "" : '<p class="empty">Nothing matches that search yet.</p>';
   items.forEach(p => {
     const s = stockInfo(p), out = Number(p.stock) <= 0;
-    const card = document.createElement("button"); card.className = "card"; card.type = "button";
-    card.innerHTML = `<div class="sw"><span class="tag ${s.cls}">${s.label}</span><img src="${esc(mediaURL(p.img) || PH)}" alt="${esc(p.name)}" loading="lazy" decoding="async" onerror="imgFallback(this)">
+    const card = document.createElement("article"); card.className = "card";
+    card.innerHTML = `<a class="card-link" href="${ROOT}shop/product.html?id=${encodeURIComponent(p.id)}"><div class="sw"><span class="tag ${s.cls}">${s.label}</span><img src="${esc(mediaURL(p.img) || PH)}" alt="${esc(p.name)}" loading="lazy" decoding="async" onerror="imgFallback(this)">
       <div class="glaze"><span>${out ? "Ask about restock" : "Choose color &amp; size"}</span></div></div>
       <div class="cb"><span class="cat">${esc(p.cat)}</span><h3>${esc(p.name)}</h3><span class="price">${fmt(p.price)}</span>
       <div class="dots">${(p.colors || []).map(c => `<span class="dot" style="background:${esc(c[1])}" title="${esc(c[0])}"></span>`).join("")}</div>
-      <span class="stockline">${s.line}</span><span class="viewbtn">${out ? "Ask about restock" : "Choose color &amp; size"} \u2192</span></div>`;
-    card.onclick = () => out
-      ? openWa(wa("Hi Attitude Styles! The " + p.name + " is sold out \u2014 please notify me when it's back."))
-      : (location.href = ROOT + "shop/product.html?id=" + p.id);
+      <span class="stockline">${s.line}</span><span class="viewbtn">View details \u2192</span></div></a>
+      <div class="card-actions">${out
+        ? `<button class="btn ghost full" type="button" data-restock="${encodeURIComponent(p.id)}">Ask about restock</button>`
+        : `<button class="btn gold full" type="button" data-quick-add="${encodeURIComponent(p.id)}">Add to bag</button>`}
+      </div>`;
     grid.appendChild(card);
   });
   const ss = $("stockSummary");
@@ -314,10 +328,6 @@ function openProduct(id) {
 }
 const dims = (p, s) => (p.dims && p.dims[s]) || "";
 const oneLine = () => ({ pid: cur.id, c: sel.c[0], s: sel.s, q: sel.q });
-function msgOne() {
-  const l = oneLine(), d = dims(cur, sel.s);
-  return `Hello Attitude Styles! I'd like to order:\n\n*${cur.name}*\nType: ${cur.cat}\nColor: ${l.c}\nSize: ${l.s}${d ? ` (${d})` : ""}\nQty: ${l.q} x ${fmt(cur.price)} = ${fmt(cur.price * l.q)}\n\n*Total: ${fmt(cur.price * l.q)}*\n\nPlease confirm availability and payment details.`;
-}
 function drawProduct() {
   const p = cur, hasColors = (p.colors || []).length > 1, vid = mediaURL(p.videoUrl), maxQ = Math.max(1, Number(p.stock) || 1);
   const media = sel.reel && vid
@@ -332,13 +342,20 @@ function drawProduct() {
    <div class="dim">${esc(dims(p, sel.s))}</div>
    <div class="lab">Quantity</div>
    <div class="qty"><button type="button" data-q="-1" aria-label="Less">\u2212</button><span>${sel.q}</span><button type="button" data-q="1" aria-label="More" ${sel.q >= maxQ ? "disabled" : ""}>+</button></div>
-   <a class="btn gold full" target="_blank" rel="noopener" href="${wa(msgOne())}">Order on WhatsApp</a>
-   <button class="btn ghost full" data-add="1" type="button">Add to bag</button>
+   <button class="btn gold full" data-add="1" type="button">Add to bag</button>
    </div></div>`;
 }
 
 document.addEventListener("click", e => {
   const el = e.target;
+  const quickAdd = el.closest && el.closest("[data-quick-add]");
+  if (quickAdd) { openProduct(Number(quickAdd.dataset.quickAdd)); return; }
+  const restock = el.closest && el.closest("[data-restock]");
+  if (restock) {
+    const product = DATA.products.find(p => p.id === Number(restock.dataset.restock));
+    if (product) openWa(wa(`Hi Attitude Styles! The ${product.name} is sold out — please notify me when it's back.`));
+    return;
+  }
   const galleryView = el.closest && el.closest("[data-gallery-view]");
   if (galleryView) { showGalleryLightbox(Number(galleryView.dataset.galleryView)); return; }
   const galleryClose = el.closest && el.closest("[data-gallery-close]");
@@ -349,11 +366,21 @@ document.addEventListener("click", e => {
   const t = el.closest && el.closest("[data-col],[data-sz],[data-q],[data-add],[data-close],[data-rm],[data-reel]");
   if (!t) return;
   const d = t.dataset;
-  if (d.col !== undefined && cur) { sel.c = cur.colors.find(c => c[0] === d.col) || sel.c; drawProduct(); }
-  else if (d.sz !== undefined && cur) { sel.s = d.sz; drawProduct(); }
-  else if (d.q !== undefined && cur) { sel.q = Math.min(Math.max(1, Number(cur.stock) || 1), Math.max(1, sel.q + Number(d.q))); drawProduct(); }
+  const productPageControl = t.closest("#productDetail");
+  if (d.col !== undefined && cur) {
+    sel.c = cur.colors.find(c => c[0] === d.col) || sel.c;
+    if (productPageControl) renderProductPage(); else drawProduct();
+  }
+  else if (d.sz !== undefined && cur) {
+    sel.s = d.sz;
+    if (productPageControl) renderProductPage(); else drawProduct();
+  }
+  else if (d.q !== undefined && cur) {
+    sel.q = Math.min(Math.max(1, Number(cur.stock) || 1), Math.max(1, sel.q + Number(d.q)));
+    if (productPageControl) renderProductPage(); else drawProduct();
+  }
   else if (d.reel !== undefined && cur) { sel.reel = !sel.reel; drawProduct(); }
-  else if (d.add !== undefined && cur) { addToCart(); $("pv").classList.remove("open"); drawBag(); $("bv").classList.add("open"); }
+  else if (d.add !== undefined && cur) addCurrentToBag();
   else if (d.close !== undefined) { const v = $(d.close); if (v) v.classList.remove("open"); }
   else if (d.rm !== undefined) { e.preventDefault(); cart.splice(Number(d.rm), 1); saveCart(); updCount(); drawBag(); }
 });
@@ -376,6 +403,11 @@ function addToCart() {
   if (f) f.q = Math.min(Math.max(1, Number(cur.stock) || 1), f.q + l.q); else cart.push(l);
   saveCart(); updCount();
 }
+function addCurrentToBag() {
+  addToCart();
+  $("pv").classList.remove("open");
+  drawBag(); $("bv").classList.add("open");
+}
 function updCount() { const c = $("cnt"); if (c) c.textContent = cart.reduce((a, l) => a + l.q, 0); }
 const findP = l => DATA.products.find(x => x.id === l.pid);
 const lineTotal = l => (findP(l) ? findP(l).price : 0) * l.q;
@@ -396,7 +428,7 @@ function drawBag() {
     (cart.length ? cart.map((l, i) => { const p = findP(l); return `<div class="line"><div><b>${esc(p.name)}</b><small>${esc(l.c)} \u00b7 ${esc(l.s)} \u00b7 Qty ${l.q}</small><a href="#" data-rm="${i}">Remove</a></div><b>${fmt(lineTotal(l))}</b></div>`; }).join("") +
       `<div class="tot"><span>Total</span><span>${fmt(bagTotal())}</span></div>
    <div class="f"><input id="nm" placeholder="Your name (optional)" value="${esc(keep.n)}"><input id="ct" placeholder="City / State (optional)" value="${esc(keep.c)}"></div>
-   <a class="btn gold full" id="wb" target="_blank" rel="noopener" href="${wa(msgBag())}">Send order on WhatsApp</a>`
+   <a class="btn gold full" id="wb" target="_blank" rel="noopener" href="${wa(msgBag())}">Order on WhatsApp</a>`
       : `<div class="empty">Your bag is empty.</div>`) + `</div>`;
   const wb = $("wb");
   if (wb) ["nm", "ct"].forEach(i => { $(i).oninput = () => { wb.href = wa(msgBag()); }; });
