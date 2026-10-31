@@ -18,12 +18,12 @@
     <button class="nav-icon-btn" id="searchToggle" type="button" aria-label="Search merch" title="Search products">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m16.5 16.5 4 4"/></svg>
     </button>
-    <a href="shop/index.html" class="navlink">Shop</a><a href="about/index.html" class="navlink">About</a><a href="contact/index.html" class="navlink">Contact</a>
+    <a href="shop/index.html" class="navlink">Shop</a><a href="about/index.html" class="navlink">About</a><a href="gallery/index.html" class="navlink">Gallery</a><a href="contact/index.html" class="navlink">Contact</a>
     <button class="bagbtn" id="bagBtn" type="button">Bag<span class="count" id="cnt">0</span></button>
     <button class="nav-icon-btn" id="themeToggle" aria-label="Toggle dark mode" type="button">&#9788;</button>
   </nav>
 </div></header>
-<div class="mobnav" aria-label="Pages"><a href="index.html">Home</a><a href="shop/index.html">Shop</a><a href="about/index.html">About</a><a href="contact/index.html">Contact</a></div>
+<div class="mobnav" aria-label="Pages"><a href="index.html">Home</a><a href="shop/index.html">Shop</a><a href="about/index.html">About</a><a href="gallery/index.html">Gallery</a><a href="contact/index.html">Contact</a></div>
 <div class="wrap">
   <section class="hero" id="top">
     <img class="crest" data-logo alt="Attitude Styles logo" width="150" height="126">
@@ -42,13 +42,15 @@
     <div class="controls" id="filterRow"></div>
     <div class="grid" id="grid"></div>
   </section>
-  <section id="about">
-    <div class="about">
-      <div>
-        <h2 style="font-size:24px;margin-bottom:12px">The Standard</h2>
-        <p>Attitude Styles is a streetwear label for people who move with intention. Every crest-marked piece is made in small batches, so what's in stock is what's real. When something sells out, it stays out until the next drop.</p>
+  <section id="about" class="brand-hero-section">
+    <div class="brand-hero">
+      <div class="brand-hero__backdrop" id="aboutHeroBackdrop"></div>
+      <div class="brand-hero__content">
+        <span class="eyebrow">Built for movement</span>
+        <h2 id="aboutTitle">The Standard</h2>
+        <p id="aboutBody">Attitude Styles is a streetwear label for people who move with intention. Every crest-marked piece is made in small batches, so what's in stock is what's real. When something sells out, it stays out until the next drop.</p>
       </div>
-      <div class="stats">
+      <div class="stats" id="aboutHighlights">
         <div class="stat"><b>Small Batch</b><span>Limited units per drop, restocked rarely</span></div>
         <div class="stat"><b>DM to Cop</b><span>Every order confirmed on WhatsApp — pick color &amp; size first</span></div>
         <div class="stat"><b>Nationwide</b><span>Delivery arranged on order</span></div>

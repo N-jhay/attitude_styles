@@ -124,7 +124,70 @@ function renderCommon() {
   if (aboutTitle) aboutTitle.textContent = about.title;
   if (aboutBody) aboutBody.textContent = about.body;
   if (aboutHighlights) aboutHighlights.innerHTML = about.highlights.map(item => `<div class="stat"><b>${esc(item.title)}</b><span>${esc(item.text)}</span></div>`).join("");
+  const heroImage = $("aboutHeroImage");
+  const heroBackdrop = $("aboutHeroBackdrop");
+  const aboutBg = about.backgroundImage || (DEFAULTS.about && DEFAULTS.about.backgroundImage) || "";
+  const bgUrl = aboutBg ? mediaURL(aboutBg) : "";
+  if (heroImage) heroImage.style.backgroundImage = bgUrl ? `url("${bgUrl}")` : "none";
+  if (heroBackdrop) heroBackdrop.style.backgroundImage = bgUrl ? `url("${bgUrl}")` : "none";
   updCount();
+}
+
+function renderGallery() {
+  const gallery = $("galleryGrid"); if (!gallery) return;
+  const source = DATA.gallery && Array.isArray(DATA.gallery.images) && DATA.gallery.images.length ? DATA.gallery.images : DEFAULTS.gallery.images;
+  const galleryTitle = $("galleryTitle");
+  const gallerySubtitle = $("gallerySubtitle");
+  if (galleryTitle && DATA.gallery && DATA.gallery.title) galleryTitle.textContent = DATA.gallery.title;
+  if (gallerySubtitle && DATA.gallery && DATA.gallery.subtitle) gallerySubtitle.textContent = DATA.gallery.subtitle;
+  gallery.innerHTML = source.map((image, index) => `<figure class="gallery-card" aria-label="Gallery image ${index + 1}">
+    <img src="${esc(mediaURL(image) || PH)}" alt="Attitude Styles gallery shot ${index + 1}" loading="lazy" onerror="imgFallback(this)">
+  </figure>`).join("");
+}
+
+function renderProductPage() {
+  const detail = $("productDetail"); if (!detail) return;
+  const params = new URLSearchParams(location.search);
+  const requestedId = Number(params.get("id"));
+  const product = DATA.products.find(p => p.id === requestedId) || DATA.products[0];
+  if (!product) {
+    detail.innerHTML = '<div class="empty">This product is no longer available.</div>';
+    return;
+  }
+  const front = product.frontImg || product.img;
+  const back = product.backImg || product.img;
+  const modelShots = Array.isArray(product.modelShots) && product.modelShots.length ? product.modelShots : [product.img];
+  const details = (product.dims && Object.entries(product.dims).map(([size, value]) => `<li><span>${esc(size)}</span><strong>${esc(value)}</strong></li>`).join("")) || "";
+  detail.innerHTML = `<section class="product-page-wrap">
+    <div class="product-page-hero">
+      <div class="product-page-media">
+        <img src="${esc(mediaURL(front) || PH)}" alt="${esc(product.name)} front" onerror="imgFallback(this)">
+      </div>
+      <div class="product-page-info">
+        <span class="eyebrow">${esc(product.cat)}</span>
+        <h1>${esc(product.name)}</h1>
+        <div class="price large">${fmt(product.price)}</div>
+        <p>${esc(product.description || "Built for confidence, movement, and everyday wear.")}</p>
+        <div class="swatch-row">${(product.colors || []).map(c => `<span class="swatch" title="${esc(c[0])}" style="background:${esc(c[1])}"></span>`).join("") || '<span class="swatch empty"></span>'}</div>
+        <div class="product-actions">
+          <a class="btn gold" data-wa="Hi Attitude Styles! I'd like to order the ${esc(product.name)}." target="_blank" rel="noopener">Order on WhatsApp</a>
+          <a class="btn ghost" href="${ROOT}shop/index.html">Back to shop</a>
+        </div>
+        <ul class="product-specs">${details}</ul>
+      </div>
+    </div>
+    <div class="product-gallery-grid">
+      <div class="product-gallery-card">
+        <span class="eyebrow">Front mockup</span>
+        <img src="${esc(mediaURL(front) || PH)}" alt="${esc(product.name)} front mockup" onerror="imgFallback(this)">
+      </div>
+      <div class="product-gallery-card">
+        <span class="eyebrow">Back mockup</span>
+        <img src="${esc(mediaURL(back) || PH)}" alt="${esc(product.name)} back mockup" onerror="imgFallback(this)">
+      </div>
+      ${modelShots.map((shot, index) => `<div class="product-gallery-card wide"><span class="eyebrow">Model shot ${index + 1}</span><img src="${esc(mediaURL(shot) || PH)}" alt="${esc(product.name)} model shot ${index + 1}" onerror="imgFallback(this)"></div>`).join("")}
+    </div>
+  </section>`;
 }
 
 function renderAll() {
@@ -137,6 +200,8 @@ function renderAll() {
     rv.play().catch(() => {});
   }
   if ($("grid")) { renderFilters(); renderGrid(); }
+  if ($("galleryGrid")) renderGallery();
+  if ($("productDetail")) renderProductPage();
 }
 
 function renderFilters() {
@@ -173,7 +238,7 @@ function renderGrid() {
       <span class="stockline">${s.line}</span><span class="viewbtn">${out ? "Ask about restock" : "Choose color &amp; size"} \u2192</span></div>`;
     card.onclick = () => out
       ? openWa(wa("Hi Attitude Styles! The " + p.name + " is sold out \u2014 please notify me when it's back."))
-      : openProduct(p.id);
+      : (location.href = ROOT + "shop/product.html?id=" + p.id);
     grid.appendChild(card);
   });
   const ss = $("stockSummary");

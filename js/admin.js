@@ -149,6 +149,16 @@
           <input class="full2" data-f="colors" placeholder="Colors: Name:#hex, Name:#hex" value="${esc(colorsToStr(p.colors))}" aria-label="Colors">
           <input class="full2" data-f="sizes" placeholder="Sizes: S, M, L, XL" value="${esc((p.sizes || []).join(", "))}" aria-label="Sizes">
           <input class="full2" data-f="img" placeholder="Photo link (or upload a photo on the left)" value="${esc(refValue(p.img))}" aria-label="Photo link">
+          <input class="full2" data-f="description" placeholder="Product story / copy" value="${esc(refValue(p.description))}" aria-label="Product description">
+          <div class="full2 upload-row">
+            <input data-f="frontImg" placeholder="Front mockup link" value="${esc(refValue(p.frontImg || p.img))}" aria-label="Front mockup link">
+            <label class="filebtn-label">Front image<input type="file" accept="image/jpeg,image/png,image/webp" class="filebtn" data-role="front-file"></label>
+          </div>
+          <div class="full2 upload-row">
+            <input data-f="backImg" placeholder="Back mockup link" value="${esc(refValue(p.backImg || p.img))}" aria-label="Back mockup link">
+            <label class="filebtn-label">Back image<input type="file" accept="image/jpeg,image/png,image/webp" class="filebtn" data-role="back-file"></label>
+          </div>
+          <input class="full2" data-f="modelShots" placeholder="Model image links, comma separated" value="${esc(refValue((p.modelShots || []).join(", ")))}" aria-label="Model shot links">
           <div class="full2 upload-row">
             <input data-f="video" placeholder="Video link (optional) or upload \u2192" value="${esc(refValue(p.videoUrl))}" aria-label="Video link">
             <label class="filebtn-label">Upload video<input type="file" accept="video/*" class="filebtn" data-role="video-file"></label>
@@ -164,6 +174,10 @@
       q('[data-f=colors]').oninput = e => { p.colors = strToColors(e.target.value); touch(); };
       q('[data-f=sizes]').oninput = e => { p.sizes = e.target.value.split(",").map(s => s.trim()).filter(Boolean); if (!p.sizes.length) p.sizes = ["One size"]; touch(); };
       q('[data-f=img]').oninput = e => { p.img = e.target.value.trim(); q('[data-role=thumb]').src = S.mediaURL(p.img) || PH; touch(); };
+      q('[data-f=description]').oninput = e => { p.description = e.target.value.trim(); touch(); };
+      q('[data-f=frontImg]').oninput = e => { p.frontImg = e.target.value.trim() || p.img; touch(); };
+      q('[data-f=backImg]').oninput = e => { p.backImg = e.target.value.trim() || p.img; touch(); };
+      q('[data-f=modelShots]').oninput = e => { p.modelShots = e.target.value.split(",").map(v => v.trim()).filter(Boolean); touch(); };
       q('[data-f=video]').oninput = e => {
         p.videoUrl = e.target.value.trim() || undefined;
         const v = q('[data-role=vprev]');
@@ -171,6 +185,8 @@
         touch();
       };
       q('[data-role=img-file]').onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Processing photo\u2026", async () => { p.img = await uploadImage(f, 1200, false); touch(); renderView(); }); };
+      q('[data-role=front-file]').onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Processing front mock-up\u2026", async () => { p.frontImg = await uploadImage(f, 1200, false); p.img = p.img || p.frontImg; touch(); renderView(); }); };
+      q('[data-role=back-file]').onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Processing back mock-up\u2026", async () => { p.backImg = await uploadImage(f, 1200, false); touch(); renderView(); }); };
       q('[data-role=video-file]').onchange = e => {
         const f = e.target.files[0]; if (!f) return;
         guard("Uploading video\u2026", async () => { p.videoUrl = await uploadVideo(f); touch(); renderView(); S.toast("Video added \u2014 remember to Save."); });
@@ -237,10 +253,22 @@
     box.innerHTML = `<div class="admin-panel"><h3>About the brand</h3>
       <div class="field"><label for="aboutTitleInput">Section heading</label><input id="aboutTitleInput" maxlength="100" value="${esc(about.title)}"></div>
       <div class="field"><label for="aboutBodyInput">Brand story</label><textarea id="aboutBodyInput" rows="5" maxlength="2000">${esc(about.body)}</textarea></div>
+      <div class="field"><label for="aboutBgUrl">Hero background image URL</label><input id="aboutBgUrl" value="${esc(refValue(about.backgroundImage))}" placeholder="Paste a direct image URL or upload below"></div>
+      <div class="logo-row"><img id="aboutBgPreview" alt="About section preview" style="width:180px;height:120px;object-fit:cover;border-radius:12px;border:1px solid var(--line)"><div>
+        <label class="filebtn-label">Upload hero image<input type="file" accept="image/jpeg,image/png,image/webp" id="aboutBgFile" class="filebtn"></label>
+      </div></div>
       <h3>Highlights</h3>
       <div id="aboutHighlightFields"></div></div>`;
+    const bgPreview = $("aboutBgPreview");
+    const updateBgPreview = () => {
+      const url = S.mediaURL(about.backgroundImage) || PH;
+      bgPreview.onerror = () => { bgPreview.onerror = null; bgPreview.src = PH; };
+      bgPreview.src = url;
+    };
     $("aboutTitleInput").oninput = e => { about.title = e.target.value; touch(); };
     $("aboutBodyInput").oninput = e => { about.body = e.target.value; touch(); };
+    $("aboutBgUrl").oninput = e => { about.backgroundImage = e.target.value.trim(); updateBgPreview(); touch(); };
+    $("aboutBgFile").onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Uploading hero photo\u2026", async () => { about.backgroundImage = await uploadImage(f, 1600, false); updateBgPreview(); touch(); renderView(); }); };
     $("aboutHighlightFields").innerHTML = about.highlights.map((item, index) => `<div class="admin-grid">
       <div class="field"><label for="aboutHighlightTitle${index}">Highlight ${index + 1} title</label><input id="aboutHighlightTitle${index}" maxlength="80" value="${esc(item.title)}"></div>
       <div class="field"><label for="aboutHighlightText${index}">Highlight ${index + 1} text</label><input id="aboutHighlightText${index}" maxlength="180" value="${esc(item.text)}"></div>
@@ -249,10 +277,55 @@
       $("aboutHighlightTitle" + index).oninput = e => { item.title = e.target.value; touch(); };
       $("aboutHighlightText" + index).oninput = e => { item.text = e.target.value; touch(); };
     });
+    updateBgPreview();
   }
 
-  const VIEWS = { overview: viewOverview, catalog: viewCatalog, inventory: viewInventory, media: viewMedia, about: viewAbout, settings: viewSettings };
-  const TITLES = { overview: "Admin overview", catalog: "Catalog", inventory: "Inventory", media: "Logo & media", about: "About the brand", settings: "Settings" };
+  function viewGallery(box) {
+    const gallery = W.gallery || (W.gallery = clone(S.DEFAULTS.gallery));
+    box.innerHTML = `<div class="admin-panel"><h3>Brand gallery</h3>
+      <div class="field"><label for="galleryTitleInput">Gallery title</label><input id="galleryTitleInput" maxlength="120" value="${esc(gallery.title)}"></div>
+      <div class="field"><label for="gallerySubtitleInput">Gallery subtitle</label><input id="gallerySubtitleInput" maxlength="220" value="${esc(gallery.subtitle)}"></div>
+      <div class="admin-actions"><button class="btn ghost small" id="galleryAddShot" type="button">+ Add gallery shot</button></div>
+      <div id="galleryImageList" class="gallery-admin-list"></div></div>`;
+    $("galleryTitleInput").oninput = e => { gallery.title = e.target.value; touch(); };
+    $("gallerySubtitleInput").oninput = e => { gallery.subtitle = e.target.value; touch(); };
+    const list = $("galleryImageList");
+    const renderImages = () => {
+      list.innerHTML = (gallery.images || []).map((src, index) => `<div class="gallery-shot-item">
+        <img src="${esc(S.mediaURL(src) || PH)}" alt="Gallery shot ${index + 1}" onerror="imgFallback(this)">
+        <div class="field"><input value="${esc(refValue(src))}" data-gallery-url="${index}" aria-label="Gallery image ${index + 1}"></div>
+        <div class="admin-actions"><label class="filebtn-label">Upload image<input type="file" accept="image/jpeg,image/png,image/webp" class="filebtn" data-gallery-file="${index}"></label><button class="del" data-gallery-remove="${index}" type="button">Remove</button></div>
+      </div>`).join("") || '<p class="empty">No gallery shots yet.</p>';
+      list.querySelectorAll("[data-gallery-url]").forEach(input => {
+        input.oninput = e => {
+          const idx = Number(input.dataset.galleryUrl);
+          gallery.images[idx] = e.target.value.trim(); touch();
+        };
+      });
+      list.querySelectorAll("[data-gallery-file]").forEach(input => {
+        input.onchange = e => {
+          const idx = Number(input.dataset.galleryFile); const f = e.target.files[0]; if (!f) return;
+          guard("Uploading gallery shot\u2026", async () => { gallery.images[idx] = await uploadImage(f, 1600, false); touch(); renderView(); });
+        };
+      });
+      list.querySelectorAll("[data-gallery-remove]").forEach(btn => {
+        btn.onclick = () => {
+          const idx = Number(btn.dataset.galleryRemove);
+          gallery.images.splice(idx, 1);
+          touch(); renderView();
+        };
+      });
+    };
+    $("galleryAddShot").onclick = () => {
+      if (!gallery.images) gallery.images = [];
+      gallery.images.push("assets/gallery/photo_1_2026-10-31_00-46-32.jpg");
+      touch(); renderView();
+    };
+    renderImages();
+  }
+
+  const VIEWS = { overview: viewOverview, catalog: viewCatalog, inventory: viewInventory, media: viewMedia, about: viewAbout, gallery: viewGallery, settings: viewSettings };
+  const TITLES = { overview: "Admin overview", catalog: "Catalog", inventory: "Inventory", media: "Logo & media", about: "About the brand", gallery: "Gallery", settings: "Settings" };
   function renderView() {
     const box = $("adminView"); if (!box) return;
     document.querySelectorAll(".nav-section").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
