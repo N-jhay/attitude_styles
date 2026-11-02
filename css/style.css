@@ -5,6 +5,8 @@ html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
 @media(min-width:760px){:root{--r:12px}}
 *{box-sizing:border-box;overflow-wrap:break-word;word-break:break-word}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 'Space Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body.store-loading>*{visibility:hidden}
+body.store-loading::before{content:"Loading store...";position:fixed;inset:0;z-index:2000;display:grid;place-items:center;visibility:visible;color:var(--soft);background:var(--bg);font-size:14px}
 h1,h2,h3{font-family:'Anton',Impact,sans-serif;font-weight:400;margin:0;letter-spacing:.01em}
 img{max-width:100%;display:block}
 button{font:inherit;color:inherit;cursor:pointer}

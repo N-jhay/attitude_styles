@@ -28,7 +28,9 @@ The admin dashboard reports upload progress for media files and supports separat
 dark-mode logos. Product mock-ups fit inside their frames without being cropped. Gallery images are
 optimized for their on-page display size. The homepage reel is blank by default and can use a fresh
 admin upload, a direct video URL, or a Google Drive share link. Section reveal animations are disabled
-to avoid scroll stutter. Static assets use a short revalidation-friendly cache policy.
+to avoid scroll stutter. Store pages wait for saved admin data before rendering, preventing bundled
+defaults from flashing before current stock appears. Static assets use a short revalidation-friendly
+cache policy.
 
 ## Netlify + Supabase deployment
 This project is now set up for a Netlify-hosted static storefront with a real Supabase-backed admin.

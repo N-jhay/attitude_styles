@@ -564,15 +564,12 @@ if (themeToggle) {
 /* ---------- Boot ---------- */
 async function init() {
   loadCart();
-  renderAll();
-  let updated = false;
   if (supabaseConfigured) {
     try {
       const remote = await fetchStoreFromSupabase();
       if (remote && Array.isArray(remote.products)) {
         DATA = Object.assign({}, JSON.parse(JSON.stringify(DEFAULTS)), remote);
         window.STORE_DATA = DATA;
-        updated = true;
       }
     } catch (e) { /* fall back to data.js */ }
   } else {
@@ -583,12 +580,12 @@ async function init() {
         if (result.data && Array.isArray(result.data.products)) {
           DATA = Object.assign({}, JSON.parse(JSON.stringify(DEFAULTS)), result.data);
           window.STORE_DATA = DATA;
-          updated = true;
         }
       }
     } catch (e) { /* fall back to data.js */ }
   }
-  if (updated) renderAll();
+  renderAll();
+  document.body.classList.remove("store-loading");
   if ($("storeSearchInput") && /[?&]search=1/.test(location.search)) $("storeSearchInput").focus();
 }
 
