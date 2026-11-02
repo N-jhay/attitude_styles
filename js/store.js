@@ -12,6 +12,14 @@ const isDarkTheme = () => {
 const defaultLogoURL = (mark = false) => ROOT + "assets/" + (mark
   ? (isDarkTheme() ? "logo-mark.png" : "logo-mark-dark.png")
   : (isDarkTheme() ? "logo.png" : "logo-dark.png"));
+const logoURLFor = (data, dark = isDarkTheme(), mark = false) => {
+  const themedLogo = dark ? data.logoDark : data.logoLight;
+  const legacyLogo = data.logo && data.logo !== DEFAULTS.logo ? data.logo : "";
+  const bundledLogo = ROOT + "assets/" + (mark
+    ? (dark ? "logo-mark.png" : "logo-mark-dark.png")
+    : (dark ? "logo.png" : "logo-dark.png"));
+  return mediaURL(themedLogo || legacyLogo) || bundledLogo;
+};
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -57,20 +65,66 @@ async function fetchStoreFromSupabase() {
 }
 
 const mediaURL = u => !u ? "" : (isAbs(u) ? u : ROOT + u);
-async function saveMedia(file) {
+function setVideoSource(video, url) {
+  const nextURL = url ? new URL(url, document.baseURI).href : "";
+  if (video.src === nextURL) return;
+  video.pause();
+  if (video._visibilityObserver) {
+    video._visibilityObserver.disconnect();
+    video._visibilityObserver = null;
+  }
+  video.removeAttribute("src");
+  video.load();
+  if (nextURL) {
+    video.src = nextURL;
+    video.load();
+  }
+}
+function uploadRequest(url, body, headers, onProgress, withCredentials = false) {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("POST", url);
+    request.withCredentials = withCredentials;
+    Object.entries(headers).forEach(([name, value]) => request.setRequestHeader(name, value));
+    request.upload.onprogress = event => {
+      if (event.lengthComputable && onProgress) onProgress(Math.round(event.loaded / event.total * 100));
+    };
+    request.onerror = () => reject(new Error("Media upload network error."));
+    request.onabort = () => reject(new Error("Media upload was cancelled."));
+    request.onload = () => {
+      let result = {};
+      try { result = JSON.parse(request.responseText); } catch {}
+      if (request.status < 200 || request.status >= 300) {
+        reject(new Error(result.error || result.message || "Media upload failed."));
+      } else {
+        resolve(result);
+      }
+    };
+    request.send(body);
+  });
+}
+async function saveMedia(file, onProgress) {
+  const filename = `${Date.now()}-${(file.name || "upload").replace(/[^a-zA-Z0-9._-]/g, "-")}`;
   if (supabaseConfigured) {
     const client = getSupabaseClient();
-    const filename = `${Date.now()}-${(file.name || "upload").replace(/[^a-zA-Z0-9._-]/g, "-")}`;
-    const { data, error } = await client.storage.from("media").upload(filename, file, { cacheControl: "3600", upsert: false });
-    if (error) throw new Error(error.message || "Media upload failed.");
-    const { data: publicUrlData } = client.storage.from("media").getPublicUrl(data.path);
+    const { data: { session }, error } = await client.auth.getSession();
+    if (error) throw new Error(error.message || "Could not verify the admin session.");
+    if (!session) throw new Error("Please sign in again before uploading media.");
+    const url = `${SUPABASE_CONFIG.supabaseUrl.replace(/\/+$/, "")}/storage/v1/object/media/${encodeURIComponent(filename)}`;
+    await uploadRequest(url, file, {
+      apikey: SUPABASE_CONFIG.supabaseAnonKey,
+      Authorization: `Bearer ${session.access_token}`,
+      "cache-control": "max-age=3600",
+      "content-type": file.type || "application/octet-stream",
+      "x-upsert": "false",
+    }, onProgress);
+    const { data: publicUrlData } = client.storage.from("media").getPublicUrl(filename);
     return publicUrlData.publicUrl;
   }
   const form = new FormData();
   form.append("file", file, "upload");
-  const response = await fetch(ROOT + "api/admin/media", { method: "POST", body: form, credentials: "same-origin" });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.error || "Media upload failed.");
+  const result = await uploadRequest(ROOT + "api/admin/media", form, {}, onProgress, true);
+  if (typeof result.url !== "string" || !result.url) throw new Error("Media upload did not return a URL.");
   return result.url;
 }
 async function persist(d) {
@@ -112,8 +166,7 @@ function renderCommon() {
   document.querySelectorAll("img[data-logo]").forEach(img => {
     const setDefault = () => { img.onerror = null; img.src = defaultLogoURL(img.hasAttribute("data-logo-mark")); };
     img.onerror = setDefault;
-    const u = isDefaultLogo() ? "" : mediaURL(DATA.logo);
-    if (u) img.src = u; else setDefault();
+    img.src = logoURLFor(DATA, isDarkTheme(), img.hasAttribute("data-logo-mark"));
   });
   // Every WhatsApp button/link on every page
   document.querySelectorAll("a[data-wa]").forEach(a => {
@@ -246,7 +299,8 @@ function renderAll() {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     rv.autoplay = false; rv.preload = "none"; rv.muted = true; rv.loop = true; rv.playsInline = true; rv.controls = reducedMotion;
     rv.setAttribute("playsinline", "true"); rv.setAttribute("muted", "true"); rv.setAttribute("loop", "true");
-    if (u) { if (rv.getAttribute("src") !== u) rv.src = u; reelWrap.style.display = "block"; } else { rv.removeAttribute("src"); reelWrap.style.display = "none"; }
+    setVideoSource(rv, u);
+    if (u) reelWrap.style.display = "block"; else reelWrap.style.display = "none";
     if (u && !reducedMotion && "IntersectionObserver" in window) {
       if (rv._visibilityObserver) rv._visibilityObserver.disconnect();
       rv._visibilityObserver = new IntersectionObserver(entries => {
@@ -534,7 +588,7 @@ async function init() {
 }
 
 window.Store = {
-  ROOT, DEFAULTS, esc, fmt, toast, mediaURL, defaultLogoURL, saveMedia, persist, resetToDefaults, renderAll, waNumber,
+  ROOT, DEFAULTS, esc, fmt, toast, mediaURL, defaultLogoURL, logoURLFor, setVideoSource, saveMedia, persist, resetToDefaults, renderAll, waNumber,
   get data() { return DATA; },
   set data(d) { DATA = d; window.STORE_DATA = d; },
 };

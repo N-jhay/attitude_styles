@@ -67,22 +67,46 @@
       img.src = url;
     });
   }
-  async function storeMedia(blob) {
-    return S.saveMedia(blob);
+  async function storeMedia(blob, onProgress) {
+    return S.saveMedia(blob, onProgress);
   }
-  async function uploadImage(file, maxW, keepAlpha) {
+  async function uploadImage(file, maxW, keepAlpha, onProgress) {
     if (!/^image\//.test(file.type)) throw new Error("Please choose an image file.");
     if (file.type === "image/svg+xml") throw new Error("SVG uploads are not supported. Use PNG, JPEG, or WebP.");
-    return storeMedia(await processImage(file, maxW, keepAlpha));
+    return storeMedia(await processImage(file, maxW, keepAlpha), onProgress);
   }
-  async function uploadVideo(file) {
+  async function uploadVideo(file, onProgress) {
     if (!/^video\//.test(file.type)) throw new Error("Please choose a video file.");
-    return storeMedia(file);
+    return storeMedia(file, onProgress);
   }
   const refValue = u => u || "";
 
   /* ---------- state ---------- */
   const touch = () => { dirty = true; const s = $("saveStatus"); if (s) s.textContent = "Unsaved changes"; const b = $("saveBtn"); if (b) b.classList.add("dirty"); };
+  let uploadProgressTimer;
+  function showUploadProgress(label) {
+    const box = $("uploadProgress"), text = $("uploadProgressText"), bar = $("uploadProgressBar");
+    if (!box || !text || !bar) return;
+    clearTimeout(uploadProgressTimer);
+    box.hidden = false;
+    box.setAttribute("aria-busy", "true");
+    text.textContent = label;
+    bar.removeAttribute("value");
+  }
+  function updateUploadProgress(percent) {
+    const text = $("uploadProgressText"), bar = $("uploadProgressBar");
+    if (!text || !bar) return;
+    bar.value = percent;
+    text.textContent = `Uploading media\u2026 ${percent}%`;
+  }
+  function finishUploadProgress(message, failed = false) {
+    const box = $("uploadProgress"), text = $("uploadProgressText"), bar = $("uploadProgressBar");
+    if (!box || !text || !bar) return;
+    box.removeAttribute("aria-busy");
+    text.textContent = message;
+    if (!failed) bar.value = 100;
+    uploadProgressTimer = setTimeout(() => { box.hidden = true; }, failed ? 4000 : 1200);
+  }
   const stats = () => ({
     total: W.products.length,
     units: W.products.reduce((n, p) => n + Number(p.stock || 0), 0),
@@ -97,8 +121,17 @@
       return [n, /^#[0-9a-f]{3,8}$/i.test(h) ? h : "#888888"];
     });
   }
-  async function guard(label, fn) {
-    try { S.toast(label); await fn(); } catch (e) { S.toast(e && e.message ? e.message : "Something went wrong."); }
+  async function guard(label, fn, upload = false) {
+    if (upload) showUploadProgress(label);
+    try {
+      S.toast(label);
+      await fn(updateUploadProgress);
+      if (upload) finishUploadProgress("Upload complete.");
+    } catch (e) {
+      const message = e && e.message ? e.message : "Something went wrong.";
+      if (upload) finishUploadProgress(message, true);
+      S.toast(message);
+    }
   }
 
   /* ---------- views ---------- */
@@ -230,14 +263,17 @@
       q('[data-role=model-shots-file]').onchange = e => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
-        guard("Uploading model shots\u2026", async () => {
+        guard("Processing model shots\u2026", async progress => {
           const uploaded = [];
-          for (const file of files) uploaded.push(await uploadImage(file, 1200, false));
+          for (const [index, file] of files.entries()) {
+            const result = await uploadImage(file, 1200, false, percent => progress(Math.round((index + percent / 100) / files.length * 100)));
+            uploaded.push(result);
+          }
           p.modelShots = [...(p.modelShots || []), ...uploaded];
           touch();
           renderView();
           S.toast(`${uploaded.length} model shot${uploaded.length === 1 ? "" : "s"} added \u2014 remember to Save.`);
-        });
+        }, true);
       };
       renderModelShotPreviews();
       q('[data-f=video]').oninput = e => {
@@ -246,12 +282,12 @@
         if (p.videoUrl) { v.src = S.mediaURL(p.videoUrl); v.style.display = "block"; } else { v.removeAttribute("src"); v.style.display = "none"; }
         touch();
       };
-      q('[data-role=img-file]').onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Processing photo\u2026", async () => { p.img = await uploadImage(f, 1200, false); touch(); renderView(); }); };
-      q('[data-role=front-file]').onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Processing front mock-up\u2026", async () => { p.frontImg = await uploadImage(f, 1200, false); p.img = p.img || p.frontImg; touch(); renderView(); }); };
-      q('[data-role=back-file]').onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Processing back mock-up\u2026", async () => { p.backImg = await uploadImage(f, 1200, false); touch(); renderView(); }); };
+      q('[data-role=img-file]').onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Processing photo\u2026", async progress => { p.img = await uploadImage(f, 1200, false, progress); touch(); renderView(); }, true); };
+      q('[data-role=front-file]').onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Processing front mock-up\u2026", async progress => { p.frontImg = await uploadImage(f, 1200, false, progress); p.img = p.img || p.frontImg; touch(); renderView(); }, true); };
+      q('[data-role=back-file]').onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Processing back mock-up\u2026", async progress => { p.backImg = await uploadImage(f, 1200, false, progress); touch(); renderView(); }, true); };
       q('[data-role=video-file]').onchange = e => {
         const f = e.target.files[0]; if (!f) return;
-        guard("Uploading video\u2026", async () => { p.videoUrl = await uploadVideo(f); touch(); renderView(); S.toast("Video added \u2014 remember to Save."); });
+        guard("Uploading video\u2026", async progress => { p.videoUrl = await uploadVideo(f, progress); touch(); renderView(); S.toast("Video added \u2014 remember to Save."); }, true);
       };
       const rv = q('[data-role=rmvideo]'); if (rv) rv.onclick = () => { p.videoUrl = undefined; touch(); renderView(); };
       q('[data-role=del]').onclick = () => { if (confirm('Remove "' + (p.name || "this product") + '"?')) { expandedProducts.delete(String(p.id)); W.products.splice(idx, 1); touch(); renderView(); } };
@@ -260,34 +296,43 @@
   }
 
   function viewMedia(box) {
-    const logoURL = W.logo === S.DEFAULTS.logo ? "" : S.mediaURL(W.logo);
+    const lightLogoURL = W.logoLight || (W.logo && W.logo !== S.DEFAULTS.logo ? W.logo : "");
+    const darkLogoURL = W.logoDark || (W.logo && W.logo !== S.DEFAULTS.logo ? W.logo : "");
     box.innerHTML = `<div class="admin-grid"><div class="admin-panel"><h3>Logo</h3>
-        <p class="sub">Shown in the header, hero, contact page and this dashboard. Use a transparent PNG for best results.</p>
-        <div class="logo-row"><img id="logoPrev" data-logo alt="Current logo" style="width:96px;height:96px"><div>
-          <label class="filebtn-label">Upload logo<input type="file" accept="image/jpeg,image/png,image/webp" id="logoFile" class="filebtn"></label>
-          <div style="margin-top:8px"><button class="btn ghost small" id="logoReset" type="button">Use bundled logo</button></div></div></div>
-        ${logoURL ? "" : '<p class="sub" style="margin-top:12px">Currently using the bundled Attitude Styles logo.</p>'}</div>
+        <p class="sub">Choose a logo for each color mode. If one mode is unset, the existing logo is used as a fallback.</p>
+        <div class="logo-row"><img id="logoLightPrev" alt="Light mode logo preview" style="width:96px;height:96px"><div>
+          <strong>Light mode</strong>
+          <label class="filebtn-label">Upload light mode logo<input type="file" accept="image/jpeg,image/png,image/webp" id="logoLightFile" class="filebtn"></label>
+          <div style="margin-top:8px"><button class="btn ghost small" id="logoLightReset" type="button">Use fallback logo</button></div></div></div>
+        <div class="logo-row" style="margin-top:16px"><img id="logoDarkPrev" alt="Dark mode logo preview" style="width:96px;height:96px"><div>
+          <strong>Dark mode</strong>
+          <label class="filebtn-label">Upload dark mode logo<input type="file" accept="image/jpeg,image/png,image/webp" id="logoDarkFile" class="filebtn"></label>
+          <div style="margin-top:8px"><button class="btn ghost small" id="logoDarkReset" type="button">Use fallback logo</button></div></div></div>
+        ${lightLogoURL || darkLogoURL ? "" : '<p class="sub" style="margin-top:12px">Currently using the bundled Attitude Styles logos.</p>'}</div>
       <div class="admin-panel"><h3>Homepage reel</h3>
         <p class="sub">The "Watch the drop" video on the home page. Paste a link or upload a video from your device.</p>
         <div class="field"><input id="reelUrl" placeholder="Video link" value="${esc(refValue(W.reel))}" aria-label="Reel link"></div>
         <div class="admin-actions"><label class="filebtn-label">Upload video<input type="file" accept="video/*" id="reelFile" class="filebtn"></label>
           <button class="btn ghost small" id="reelClear" type="button">Remove reel</button></div>
         <video id="reelPrev" class="mini-video" controls playsinline preload="metadata" ${W.reel ? `src="${esc(S.mediaURL(W.reel))}"` : 'style="display:none"'}></video></div></div>`;
-    // paint preview through the shared logo logic using working value
-    const prev = $("logoPrev"), applyLogo = () => {
-      prev.onerror = () => { prev.onerror = null; prev.src = S.defaultLogoURL(); };
-      if (W.logo === S.DEFAULTS.logo || !S.mediaURL(W.logo)) prev.src = S.defaultLogoURL();
-      else prev.src = S.mediaURL(W.logo);
+    const applyLogoPreview = (mode, dark) => {
+      const preview = $(`logo${mode}Prev`);
+      preview.onerror = () => { preview.onerror = null; preview.src = S.defaultLogoURL(); };
+      preview.src = S.logoURLFor(W, dark);
     };
-    applyLogo();
-    $("logoFile").onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Processing logo\u2026", async () => { W.logo = await uploadImage(f, 800, true); touch(); renderView(); }); };
-    $("logoReset").onclick = () => { W.logo = S.DEFAULTS.logo; touch(); renderView(); };
+    applyLogoPreview("Light", false);
+    applyLogoPreview("Dark", true);
+    $("logoLightFile").onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Processing light mode logo\u2026", async progress => { W.logoLight = await uploadImage(f, 800, true, progress); touch(); renderView(); }, true); };
+    $("logoDarkFile").onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Processing dark mode logo\u2026", async progress => { W.logoDark = await uploadImage(f, 800, true, progress); touch(); renderView(); }, true); };
+    $("logoLightReset").onclick = () => { W.logoLight = ""; touch(); renderView(); };
+    $("logoDarkReset").onclick = () => { W.logoDark = ""; touch(); renderView(); };
     $("reelUrl").oninput = e => {
       W.reel = e.target.value.trim(); const v = $("reelPrev");
-      if (W.reel) { v.src = S.mediaURL(W.reel); v.style.display = "block"; } else { v.removeAttribute("src"); v.style.display = "none"; }
+      S.setVideoSource(v, W.reel ? S.mediaURL(W.reel) : "");
+      if (W.reel) v.style.display = "block"; else v.style.display = "none";
       touch();
     };
-    $("reelFile").onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Uploading video\u2026", async () => { W.reel = await uploadVideo(f); touch(); renderView(); S.toast("Reel added \u2014 remember to Save."); }); };
+    $("reelFile").onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Uploading video\u2026", async progress => { W.reel = await uploadVideo(f, progress); touch(); renderView(); S.toast("Reel added \u2014 remember to Save."); }, true); };
     $("reelClear").onclick = () => { W.reel = ""; touch(); renderView(); };
   }
 
@@ -436,7 +481,7 @@
     $("aboutTitleInput").oninput = e => { about.title = e.target.value; touch(); };
     $("aboutBodyInput").oninput = e => { about.body = e.target.value; touch(); };
     $("aboutBgUrl").oninput = e => { about.backgroundImage = e.target.value.trim(); updateBgPreview(); touch(); };
-    $("aboutBgFile").onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Uploading hero photo\u2026", async () => { about.backgroundImage = await uploadImage(f, 1600, false); updateBgPreview(); touch(); renderView(); }); };
+    $("aboutBgFile").onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Uploading hero photo\u2026", async progress => { about.backgroundImage = await uploadImage(f, 1600, false, progress); updateBgPreview(); touch(); renderView(); }, true); };
     $("aboutHighlightFields").innerHTML = about.highlights.map((item, index) => `<div class="admin-grid">
       <div class="field"><label for="aboutHighlightTitle${index}">Highlight ${index + 1} title</label><input id="aboutHighlightTitle${index}" maxlength="80" value="${esc(item.title)}"></div>
       <div class="field"><label for="aboutHighlightText${index}">Highlight ${index + 1} text</label><input id="aboutHighlightText${index}" maxlength="180" value="${esc(item.text)}"></div>
@@ -473,7 +518,7 @@
       list.querySelectorAll("[data-gallery-file]").forEach(input => {
         input.onchange = e => {
           const idx = Number(input.dataset.galleryFile); const f = e.target.files[0]; if (!f) return;
-          guard("Uploading gallery shot\u2026", async () => { gallery.images[idx] = await uploadImage(f, 1600, false); touch(); renderView(); });
+          guard("Uploading gallery shot\u2026", async progress => { gallery.images[idx] = await uploadImage(f, 1600, false, progress); touch(); renderView(); }, true);
         };
       });
       list.querySelectorAll("[data-gallery-remove]").forEach(btn => {
@@ -581,8 +626,8 @@
     // paint the logo in the sidebar without touching the shop grid
     const lg = document.querySelector(".admin-logo");
     if (lg) { lg.onerror = () => { lg.onerror = null; lg.src = S.defaultLogoURL(true); };
-      if (S.data.logo === S.DEFAULTS.logo || !S.mediaURL(S.data.logo)) lg.src = S.defaultLogoURL(true);
-      else lg.src = S.mediaURL(S.data.logo); }
+      const theme = document.documentElement.getAttribute("data-theme");
+      lg.src = S.logoURLFor(S.data, theme ? theme === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches, true); }
     tab = "overview"; expandedProducts = new Set(); renderView();
     $("av").classList.add("open");
   }

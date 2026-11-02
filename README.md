@@ -24,8 +24,10 @@ the site, and stock is adjusted manually in Inventory after confirming an order.
 
 ## Performance and media
 Product image uploads are resized and encoded as WebP where supported; transparent logos remain PNG.
-Gallery images are optimized for their on-page display size, and the homepage reel loads and plays
-only near the viewport. Static assets use a short revalidation-friendly cache policy.
+The admin dashboard reports upload progress for media files and supports separate light- and
+dark-mode logos. Product mock-ups fit inside their frames without being cropped. Gallery images are
+optimized for their on-page display size, and the homepage reel loads and plays only near the
+viewport. Static assets use a short revalidation-friendly cache policy.
 
 ## Netlify + Supabase deployment
 This project is now set up for a Netlify-hosted static storefront with a real Supabase-backed admin.

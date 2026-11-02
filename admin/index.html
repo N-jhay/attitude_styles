@@ -16,6 +16,10 @@
 </head>
 <body data-admin-page>
 <div class="veil" id="av" data-static><div class="sheet" id="asheet"></div></div>
+<div class="upload-progress" id="uploadProgress" role="status" aria-live="polite" hidden>
+  <span id="uploadProgressText">Preparing upload...</span>
+  <progress id="uploadProgressBar" max="100" aria-label="Upload progress"></progress>
+</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>window.SITE_ROOT = "../";</script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

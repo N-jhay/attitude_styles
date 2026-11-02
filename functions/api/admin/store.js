@@ -15,6 +15,8 @@ function validStore(data) {
       || typeof item.text !== "string" || item.text.length > 180))) return false;
   if (typeof (data.announcement || "") !== "string" || (data.announcement || "").length > 300) return false;
   if (typeof (data.logo || "") !== "string" || (data.logo || "").length > 2048) return false;
+  if (typeof (data.logoLight || "") !== "string" || (data.logoLight || "").length > 2048) return false;
+  if (typeof (data.logoDark || "") !== "string" || (data.logoDark || "").length > 2048) return false;
   if (typeof (data.reel || "") !== "string" || (data.reel || "").length > 2048) return false;
 
   return data.products.every(product => {
