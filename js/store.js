@@ -65,8 +65,21 @@ async function fetchStoreFromSupabase() {
 }
 
 const mediaURL = u => !u ? "" : (isAbs(u) ? u : ROOT + u);
+function reelMedia(url) {
+  if (typeof url !== "string" || !url.trim()) return null;
+  let parsed;
+  try { parsed = new URL(url.trim(), document.baseURI); } catch { return null; }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+  if (parsed.hostname === "drive.google.com") {
+    const fileId = parsed.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || parsed.searchParams.get("id");
+    if (!fileId || !/^[\w-]+$/.test(fileId)) return null;
+    return { type: "drive", src: `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview?autoplay=1` };
+  }
+  return { type: "video", src: parsed.href };
+}
 const hasFreshReel = data => typeof data.reel === "string" && !!data.reel
-  && typeof data.reelUploadId === "string" && !!data.reelUploadId;
+  && ((typeof data.reelUploadId === "string" && !!data.reelUploadId) || data.reelSource === "link")
+  && !!reelMedia(data.reel);
 function setVideoSource(video, url) {
   const nextURL = url ? new URL(url, document.baseURI).href : "";
   if (video.src === nextURL) return;
@@ -297,13 +310,33 @@ function renderAll() {
   renderCommon();
   const reelWrap = $("reelWrap"), rv = $("reelV");
   if (reelWrap && rv) {
-    const u = hasFreshReel(DATA) ? mediaURL(DATA.reel) : "";
+    const videoBox = rv.parentElement;
+    const media = hasFreshReel(DATA) ? reelMedia(DATA.reel) : null;
+    const u = media && media.type === "video" ? media.src : "";
+    if (media && media.type === "drive") {
+      rv.pause();
+      rv.removeAttribute("src");
+      rv.load();
+      const frame = document.createElement("iframe");
+      frame.src = media.src;
+      frame.title = "Attitude Styles reel";
+      frame.allow = "autoplay; encrypted-media; picture-in-picture";
+      frame.allowFullscreen = true;
+      const currentFrame = videoBox.querySelector("iframe");
+      if (!currentFrame || currentFrame.src !== frame.src) {
+        currentFrame?.remove();
+        videoBox.insertBefore(frame, rv);
+      }
+    } else {
+      videoBox.querySelector("iframe")?.remove();
+      if (!videoBox.contains(rv)) videoBox.appendChild(rv);
+    }
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     rv.autoplay = !!u; rv.preload = "none"; rv.muted = true; rv.loop = true; rv.playsInline = true; rv.controls = reducedMotion;
     rv.setAttribute("playsinline", "true"); rv.setAttribute("muted", "true"); rv.setAttribute("loop", "true");
     if (rv.autoplay) rv.setAttribute("autoplay", ""); else rv.removeAttribute("autoplay");
     setVideoSource(rv, u);
-    if (u) reelWrap.style.display = "block"; else reelWrap.style.display = "none";
+    if (media) reelWrap.style.display = "block"; else reelWrap.style.display = "none";
     if (u) rv.play().catch(() => {});
   }
   if ($("grid")) { renderFilters(); renderGrid(); }
@@ -560,7 +593,7 @@ async function init() {
 }
 
 window.Store = {
-  ROOT, DEFAULTS, esc, fmt, toast, mediaURL, defaultLogoURL, logoURLFor, setVideoSource, hasFreshReel, saveMedia, persist, resetToDefaults, renderAll, waNumber,
+  ROOT, DEFAULTS, esc, fmt, toast, mediaURL, defaultLogoURL, logoURLFor, setVideoSource, reelMedia, hasFreshReel, saveMedia, persist, resetToDefaults, renderAll, waNumber,
   get data() { return DATA; },
   set data(d) { DATA = d; window.STORE_DATA = d; },
 };

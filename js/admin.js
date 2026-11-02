@@ -354,10 +354,12 @@
           <div style="margin-top:8px"><button class="btn ghost small" id="logoDarkReset" type="button">Use fallback logo</button></div></div></div>
         ${lightLogoURL || darkLogoURL ? "" : '<p class="sub" style="margin-top:12px">Currently using the bundled Attitude Styles logos.</p>'}</div>
       <div class="admin-panel"><h3>Homepage reel</h3>
-        <p class="sub">The "Watch the drop" video only plays after a fresh upload here. Older video links are disabled.</p>
+        <p class="sub">Upload a video or paste a direct video URL or Google Drive share link. Old reel links are ignored until you use them here.</p>
+        <div class="field"><label for="reelUrl">Video link</label><input id="reelUrl" type="url" placeholder="Direct video URL or Google Drive share link" value="${esc(W.reelSource === "link" ? refValue(W.reel) : "")}"></div>
+        <p class="sub" id="reelLinkError" role="status" hidden>Enter a valid http(s) video link or Google Drive share link.</p>
         <div class="admin-actions"><label class="filebtn-label">Upload video<input type="file" accept="video/*" id="reelFile" class="filebtn"></label>
           <button class="btn ghost small" id="reelClear" type="button">Remove reel</button></div>
-        <video id="reelPrev" class="mini-video" controls playsinline preload="none" ${S.hasFreshReel(W) ? `src="${esc(S.mediaURL(W.reel))}"` : 'style="display:none"'}></video></div></div>`;
+        <div id="reelPreview" class="reel-admin-preview" ${S.hasFreshReel(W) ? "" : "hidden"}></div></div></div>`;
     const applyLogoPreview = (mode, dark) => {
       const preview = $(`logo${mode}Prev`);
       preview.onerror = () => { preview.onerror = null; preview.src = S.defaultLogoURL(); };
@@ -369,8 +371,39 @@
     $("logoDarkFile").onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Processing dark mode logo\u2026", async progress => { W.logoDark = await uploadImage(f, 800, true, progress); touch(); renderView(); }, true); };
     $("logoLightReset").onclick = () => { W.logoLight = ""; touch(); renderView(); };
     $("logoDarkReset").onclick = () => { W.logoDark = ""; touch(); renderView(); };
-    $("reelFile").onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Uploading video\u2026", async progress => { W.reel = await uploadVideo(f, progress); W.reelUploadId = crypto.randomUUID(); touch(); renderView(); S.toast("Fresh reel uploaded \u2014 remember to Save."); }, true); };
-    $("reelClear").onclick = () => { W.reel = ""; W.reelUploadId = ""; touch(); renderView(); };
+    const renderReelPreview = () => {
+      const preview = $("reelPreview"), error = $("reelLinkError");
+      const media = S.reelMedia(W.reel);
+      const active = S.hasFreshReel(W) && media;
+      error.hidden = !W.reel || !!media;
+      preview.hidden = !active;
+      if (!active) { preview.replaceChildren(); return; }
+      if (media.type === "drive") {
+        const frame = document.createElement("iframe");
+        frame.src = media.src;
+        frame.title = "Homepage reel preview";
+        frame.allow = "autoplay; encrypted-media; picture-in-picture";
+        frame.allowFullscreen = true;
+        preview.replaceChildren(frame);
+      } else {
+        const video = document.createElement("video");
+        video.src = media.src;
+        video.controls = true;
+        video.playsInline = true;
+        video.preload = "none";
+        preview.replaceChildren(video);
+      }
+    };
+    $("reelUrl").oninput = e => {
+      W.reel = e.target.value.trim();
+      W.reelUploadId = "";
+      W.reelSource = S.reelMedia(W.reel) ? "link" : "";
+      renderReelPreview();
+      touch();
+    };
+    $("reelFile").onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Uploading video\u2026", async progress => { W.reel = await uploadVideo(f, progress); W.reelUploadId = crypto.randomUUID(); W.reelSource = "upload"; touch(); renderView(); S.toast("Reel added \u2014 remember to Save."); }, true); };
+    $("reelClear").onclick = () => { W.reel = ""; W.reelUploadId = ""; W.reelSource = ""; touch(); renderView(); };
+    renderReelPreview();
   }
 
   function viewSettings(box) {
