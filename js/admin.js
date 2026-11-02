@@ -275,9 +275,9 @@
         <video id="reelPrev" class="mini-video" controls playsinline preload="metadata" ${W.reel ? `src="${esc(S.mediaURL(W.reel))}"` : 'style="display:none"'}></video></div></div>`;
     // paint preview through the shared logo logic using working value
     const prev = $("logoPrev"), applyLogo = () => {
-      prev.onerror = () => { prev.onerror = null; prev.src = S.ROOT + "assets/logo.png"; prev.setAttribute("data-invert", "1"); };
-      if (W.logo === S.DEFAULTS.logo || !S.mediaURL(W.logo)) { prev.src = S.ROOT + "assets/logo.png"; prev.setAttribute("data-invert", "1"); }
-      else { prev.removeAttribute("data-invert"); prev.src = S.mediaURL(W.logo); }
+      prev.onerror = () => { prev.onerror = null; prev.src = S.defaultLogoURL(); };
+      if (W.logo === S.DEFAULTS.logo || !S.mediaURL(W.logo)) prev.src = S.defaultLogoURL();
+      else prev.src = S.mediaURL(W.logo);
     };
     applyLogo();
     $("logoFile").onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Processing logo\u2026", async () => { W.logo = await uploadImage(f, 800, true); touch(); renderView(); }); };
@@ -550,7 +550,7 @@
     if (!$("asheet")) return;
     $("asheet").innerHTML = `<div class="admin-layout">
       <aside class="admin-sidebar">
-        <div class="admin-brand-wrap"><img class="admin-logo" data-logo alt="Attitude Styles logo"><div><p class="eyebrow">Store manager</p><h2>Attitude Styles</h2></div></div>
+        <div class="admin-brand-wrap"><img class="admin-logo" data-logo data-logo-mark alt="Attitude Styles logo"><div><p class="eyebrow">Store manager</p><h2>Attitude Styles</h2></div></div>
         <nav class="admin-nav" aria-label="Admin sections">
           ${Object.keys(TITLES).map(k => `<button class="nav-section" type="button" data-tab="${k}">${k === "media" ? "Logo &amp; media" : TITLES[k].replace("Admin overview", "Overview")}</button>`).join("")}
         </nav>
@@ -580,8 +580,9 @@
     };
     // paint the logo in the sidebar without touching the shop grid
     const lg = document.querySelector(".admin-logo");
-    if (lg) { lg.onerror = () => { lg.onerror = null; lg.src = S.ROOT + "assets/logo.png"; lg.setAttribute("data-invert", "1"); };
-      if (S.data.logo === S.DEFAULTS.logo || !S.mediaURL(S.data.logo)) { lg.src = S.ROOT + "assets/logo.png"; lg.setAttribute("data-invert", "1"); } else lg.src = S.mediaURL(S.data.logo); }
+    if (lg) { lg.onerror = () => { lg.onerror = null; lg.src = S.defaultLogoURL(true); };
+      if (S.data.logo === S.DEFAULTS.logo || !S.mediaURL(S.data.logo)) lg.src = S.defaultLogoURL(true);
+      else lg.src = S.mediaURL(S.data.logo); }
     tab = "overview"; expandedProducts = new Set(); renderView();
     $("av").classList.add("open");
   }

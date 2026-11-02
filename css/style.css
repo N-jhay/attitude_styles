@@ -16,9 +16,6 @@ header{position:sticky;top:0;z-index:30;padding-top:calc(env(safe-area-inset-top
 .hbar{display:flex;align-items:center;justify-content:space-between;padding:8px 0 12px;gap:12px;flex-wrap:nowrap}
 .brand{display:flex;align-items:center;gap:8px;text-decoration:none;min-width:0;flex:1 1 auto;overflow:hidden;color:var(--ink)}
 .brand img{height:30px;width:auto;flex:none;object-fit:contain}
-img[data-invert]{filter:invert(1)}
-:root[data-theme="dark"] img[data-invert]{filter:none}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) img[data-invert]{filter:none}}
 .brand span{font-family:'Anton';font-size:15px;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top-nav{display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:500;flex-wrap:nowrap;flex:none;padding:5px 8px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb, var(--card) 88%, var(--bg));box-shadow:0 8px 16px var(--shadow)}
 nav a{text-decoration:none;opacity:.9;cursor:pointer;white-space:nowrap;color:var(--ink)}

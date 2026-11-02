@@ -5,6 +5,13 @@
 const ROOT = window.SITE_ROOT || "";                       // "" on the home page, "../" in sub-folders
 const DEFAULTS = JSON.parse(JSON.stringify(window.STORE_DATA));
 let DATA = window.STORE_DATA;
+const isDarkTheme = () => {
+  const theme = document.documentElement.getAttribute("data-theme");
+  return theme ? theme === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+};
+const defaultLogoURL = (mark = false) => ROOT + "assets/" + (mark
+  ? (isDarkTheme() ? "logo-mark.png" : "logo-mark-dark.png")
+  : (isDarkTheme() ? "logo.png" : "logo-dark.png"));
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -103,10 +110,10 @@ function stockInfo(p) {
 function renderCommon() {
   // Logo everywhere (header, hero, admin, contact...). Falls back to the bundled logo if a custom one fails.
   document.querySelectorAll("img[data-logo]").forEach(img => {
-    const setDefault = () => { img.onerror = null; img.src = ROOT + "assets/logo.png"; img.setAttribute("data-invert", "1"); };
+    const setDefault = () => { img.onerror = null; img.src = defaultLogoURL(img.hasAttribute("data-logo-mark")); };
     img.onerror = setDefault;
     const u = isDefaultLogo() ? "" : mediaURL(DATA.logo);
-    if (u) { img.removeAttribute("data-invert"); img.src = u; } else setDefault();
+    if (u) img.src = u; else setDefault();
   });
   // Every WhatsApp button/link on every page
   document.querySelectorAll("a[data-wa]").forEach(a => {
@@ -475,6 +482,7 @@ if (themeToggle) {
     root.setAttribute("data-theme", n);
     try { localStorage.setItem("attitude-theme", n); } catch (e) {}
     applyIcon();
+    renderCommon();
   };
 }
 
@@ -526,7 +534,7 @@ async function init() {
 }
 
 window.Store = {
-  ROOT, DEFAULTS, esc, fmt, toast, mediaURL, saveMedia, persist, resetToDefaults, renderAll, waNumber,
+  ROOT, DEFAULTS, esc, fmt, toast, mediaURL, defaultLogoURL, saveMedia, persist, resetToDefaults, renderAll, waNumber,
   get data() { return DATA; },
   set data(d) { DATA = d; window.STORE_DATA = d; },
 };
