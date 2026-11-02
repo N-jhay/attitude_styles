@@ -297,20 +297,12 @@ function renderAll() {
   if (reelWrap && rv) {
     const u = mediaURL(DATA.reel);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    rv.autoplay = false; rv.preload = "none"; rv.muted = true; rv.loop = true; rv.playsInline = true; rv.controls = reducedMotion;
+    rv.autoplay = !!u; rv.preload = "none"; rv.muted = true; rv.loop = true; rv.playsInline = true; rv.controls = reducedMotion;
     rv.setAttribute("playsinline", "true"); rv.setAttribute("muted", "true"); rv.setAttribute("loop", "true");
+    if (rv.autoplay) rv.setAttribute("autoplay", ""); else rv.removeAttribute("autoplay");
     setVideoSource(rv, u);
     if (u) reelWrap.style.display = "block"; else reelWrap.style.display = "none";
-    if (u && !reducedMotion && "IntersectionObserver" in window) {
-      if (rv._visibilityObserver) rv._visibilityObserver.disconnect();
-      rv._visibilityObserver = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) rv.play().catch(() => {});
-          else rv.pause();
-        });
-      }, { rootMargin: "160px 0px" });
-      rv._visibilityObserver.observe(rv);
-    } else if (u && !reducedMotion) rv.play().catch(() => {});
+    if (u) rv.play().catch(() => {});
   }
   if ($("grid")) { renderFilters(); renderGrid(); }
   if ($("galleryGrid")) renderGallery();

@@ -114,13 +114,12 @@
     out: W.products.filter(p => Number(p.stock) <= 0).length,
   });
   const pill = p => { const s = Number(p.stock); return s <= 0 ? '<span class="pill out">Sold out</span>' : s <= 3 ? '<span class="pill low">Low</span>' : '<span class="pill in">In stock</span>'; };
-  function colorsToStr(cs) { return (cs || []).map(c => c[0] + ":" + c[1]).join(", "); }
-  function strToColors(s) {
-    return s.split(",").map(x => x.trim()).filter(Boolean).map(x => {
-      const i = x.lastIndexOf(":"), n = i > 0 ? x.slice(0, i).trim() : x, h = i > 0 ? x.slice(i + 1).trim() : "";
-      return [n, /^#[0-9a-f]{3,8}$/i.test(h) ? h : "#888888"];
-    });
-  }
+  const normalizeColorHex = value => {
+    const hex = String(value || "").trim();
+    if (/^#[0-9a-f]{6}$/i.test(hex)) return hex;
+    if (/^#[0-9a-f]{3}$/i.test(hex)) return "#" + [...hex.slice(1)].map(char => char + char).join("");
+    return "";
+  };
   async function guard(label, fn, upload = false) {
     if (upload) showUploadProgress(label);
     try {
@@ -199,7 +198,7 @@
           <label class="field"><span>Category</span><input data-f="cat" placeholder="e.g. Tees" value="${esc(p.cat)}" aria-label="Category"></label>
           <label class="field"><span>Price (\u20a6)</span><input data-f="price" placeholder="0" type="number" min="0" value="${Number(p.price) || 0}" aria-label="Price"></label>
           <label class="field"><span>Stock quantity</span><input data-f="stock" placeholder="0" type="number" min="0" value="${Number(p.stock) || 0}" aria-label="Stock"></label>
-          <label class="field full2"><span>Available colours</span><input data-f="colors" placeholder="Name:#hex, Name:#hex" value="${esc(colorsToStr(p.colors))}" aria-label="Colors"></label>
+          <div class="field full2"><span>Available colours</span><div class="product-colors" data-role="colors"></div><button class="btn ghost small" data-role="add-color" type="button">+ Add colour</button></div>
           <label class="field full2"><span>Available sizes</span><input data-f="sizes" placeholder="S, M, L, XL" value="${esc((p.sizes || []).join(", "))}" aria-label="Sizes"></label>
           <label class="field full2"><span>Listing image URL</span><input data-f="img" placeholder="Paste an image URL or use Upload listing image" value="${esc(refValue(p.img))}" aria-label="Photo link"></label>
           <label class="field full2"><span>Product description</span><textarea data-f="description" rows="3" placeholder="Short product details" aria-label="Product description">${esc(refValue(p.description))}</textarea></label>
@@ -234,7 +233,52 @@
       q('[data-f=cat]').oninput = e => { p.cat = e.target.value; updateSummaryMeta(); touch(); };
       q('[data-f=price]').oninput = e => { p.price = Math.max(0, Number(e.target.value) || 0); updateSummaryMeta(); touch(); };
       q('[data-f=stock]').oninput = e => { p.stock = Math.max(0, Math.floor(Number(e.target.value) || 0)); q('[data-role=summary-stock]').innerHTML = pill(p); touch(); };
-      q('[data-f=colors]').oninput = e => { p.colors = strToColors(e.target.value); touch(); };
+      const renderColors = () => {
+        const colors = q('[data-role=colors]');
+        colors.innerHTML = (p.colors || []).map(([name, value], colorIndex) => {
+          const validHex = normalizeColorHex(value);
+          return `<div class="product-color-row" data-color-index="${colorIndex}">
+            <label><span class="sr-only">Colour name</span><input data-color-name type="text" value="${esc(name)}" placeholder="Colour name" aria-label="Colour ${colorIndex + 1} name"></label>
+            <label class="product-color-picker"><span class="sr-only">Choose colour</span><input data-color-picker type="color" value="${validHex || "#888888"}" aria-label="Choose colour ${colorIndex + 1}"></label>
+            <label><span class="sr-only">Hex colour</span><input data-color-hex type="text" value="${esc(value)}" placeholder="#000000" aria-label="Hex colour ${colorIndex + 1}"></label>
+            <button class="del" data-remove-color type="button" aria-label="Remove colour ${colorIndex + 1}">Remove</button>
+          </div>`;
+        }).join("") || '<p class="sub">No colours added yet.</p>';
+        colors.querySelectorAll(".product-color-row").forEach(colorRow => {
+          const index = Number(colorRow.dataset.colorIndex);
+          const nameInput = colorRow.querySelector("[data-color-name]");
+          const picker = colorRow.querySelector("[data-color-picker]");
+          const hexInput = colorRow.querySelector("[data-color-hex]");
+          nameInput.oninput = () => { p.colors[index][0] = nameInput.value.trim(); touch(); };
+          picker.oninput = () => {
+            p.colors[index][1] = picker.value;
+            hexInput.value = picker.value;
+            hexInput.setCustomValidity("");
+            touch();
+          };
+          hexInput.oninput = () => {
+            const normalized = normalizeColorHex(hexInput.value);
+            hexInput.setCustomValidity(normalized ? "" : "Enter a valid 3- or 6-digit hex colour, such as #AABBCC.");
+            if (!normalized) return;
+            p.colors[index][1] = normalized;
+            picker.value = normalized;
+            touch();
+          };
+          colorRow.querySelector("[data-remove-color]").onclick = () => {
+            p.colors.splice(index, 1);
+            touch();
+            renderColors();
+          };
+        });
+      };
+      q('[data-role=add-color]').onclick = () => {
+        if (!p.colors) p.colors = [];
+        p.colors.push(["New colour", "#888888"]);
+        touch();
+        renderColors();
+        q('[data-role=colors] .product-color-row:last-child [data-color-name]')?.focus();
+      };
+      renderColors();
       q('[data-f=sizes]').oninput = e => { p.sizes = e.target.value.split(",").map(s => s.trim()).filter(Boolean); if (!p.sizes.length) p.sizes = ["One size"]; touch(); };
       q('[data-f=img]').oninput = e => { p.img = e.target.value.trim(); q('[data-role=thumb]').src = S.mediaURL(p.img) || PH; touch(); };
       q('[data-f=description]').oninput = e => { p.description = e.target.value.trim(); touch(); };
