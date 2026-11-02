@@ -37,7 +37,6 @@ window.STORE_DATA = {
     ],
   },
   announcement: "", // e.g. "New drop this Saturday — message us to reserve". Leave blank to hide the banner.
-  reel: "https://res.cloudinary.com/duw8lbca7/video/upload/v1785713601/steezywurld/vgcowhqwullba1vucwd3.mp4",
   logo: "assets/logo.png",
   products: [
     {

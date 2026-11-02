@@ -18,6 +18,7 @@ function validStore(data) {
   if (typeof (data.logoLight || "") !== "string" || (data.logoLight || "").length > 2048) return false;
   if (typeof (data.logoDark || "") !== "string" || (data.logoDark || "").length > 2048) return false;
   if (typeof (data.reel || "") !== "string" || (data.reel || "").length > 2048) return false;
+  if (typeof (data.reelUploadId || "") !== "string" || (data.reelUploadId || "").length > 128) return false;
 
   return data.products.every(product => {
     if (!product || typeof product !== "object" || Array.isArray(product)) return false;

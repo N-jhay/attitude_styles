@@ -354,11 +354,10 @@
           <div style="margin-top:8px"><button class="btn ghost small" id="logoDarkReset" type="button">Use fallback logo</button></div></div></div>
         ${lightLogoURL || darkLogoURL ? "" : '<p class="sub" style="margin-top:12px">Currently using the bundled Attitude Styles logos.</p>'}</div>
       <div class="admin-panel"><h3>Homepage reel</h3>
-        <p class="sub">The "Watch the drop" video on the home page. Paste a link or upload a video from your device.</p>
-        <div class="field"><input id="reelUrl" placeholder="Video link" value="${esc(refValue(W.reel))}" aria-label="Reel link"></div>
+        <p class="sub">The "Watch the drop" video only plays after a fresh upload here. Older video links are disabled.</p>
         <div class="admin-actions"><label class="filebtn-label">Upload video<input type="file" accept="video/*" id="reelFile" class="filebtn"></label>
           <button class="btn ghost small" id="reelClear" type="button">Remove reel</button></div>
-        <video id="reelPrev" class="mini-video" controls playsinline preload="metadata" ${W.reel ? `src="${esc(S.mediaURL(W.reel))}"` : 'style="display:none"'}></video></div></div>`;
+        <video id="reelPrev" class="mini-video" controls playsinline preload="none" ${S.hasFreshReel(W) ? `src="${esc(S.mediaURL(W.reel))}"` : 'style="display:none"'}></video></div></div>`;
     const applyLogoPreview = (mode, dark) => {
       const preview = $(`logo${mode}Prev`);
       preview.onerror = () => { preview.onerror = null; preview.src = S.defaultLogoURL(); };
@@ -370,14 +369,8 @@
     $("logoDarkFile").onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Processing dark mode logo\u2026", async progress => { W.logoDark = await uploadImage(f, 800, true, progress); touch(); renderView(); }, true); };
     $("logoLightReset").onclick = () => { W.logoLight = ""; touch(); renderView(); };
     $("logoDarkReset").onclick = () => { W.logoDark = ""; touch(); renderView(); };
-    $("reelUrl").oninput = e => {
-      W.reel = e.target.value.trim(); const v = $("reelPrev");
-      S.setVideoSource(v, W.reel ? S.mediaURL(W.reel) : "");
-      if (W.reel) v.style.display = "block"; else v.style.display = "none";
-      touch();
-    };
-    $("reelFile").onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Uploading video\u2026", async progress => { W.reel = await uploadVideo(f, progress); touch(); renderView(); S.toast("Reel added \u2014 remember to Save."); }, true); };
-    $("reelClear").onclick = () => { W.reel = ""; touch(); renderView(); };
+    $("reelFile").onchange = e => { const f = e.target.files[0]; if (!f) return; guard("Uploading video\u2026", async progress => { W.reel = await uploadVideo(f, progress); W.reelUploadId = crypto.randomUUID(); touch(); renderView(); S.toast("Fresh reel uploaded \u2014 remember to Save."); }, true); };
+    $("reelClear").onclick = () => { W.reel = ""; W.reelUploadId = ""; touch(); renderView(); };
   }
 
   function viewSettings(box) {
