@@ -975,3 +975,19 @@ button:not(.card):active,a.btn:active{transform:scale(.98)}
   *,*::before,*::after{animation:none!important;scroll-behavior:auto!important;transition:none!important}
   .chip:hover,.chip:active,.admin-layout,.admin-view>*,.admin-stats>*,.admin-view .product-editor,.admin-view .srow,.admin-view .gallery-shot-item,.veil:not([data-static]).open .sheet,.toast,.toast.show{transform:none}
 }
+
+/* Final visual polish */
+.hero .crest{filter:drop-shadow(0 14px 26px color-mix(in srgb,var(--gold) 18%,transparent))}
+.brand-hero__backdrop{filter:blur(7px) brightness(.84) saturate(.88)}
+.brand-hero__backdrop::after{background:linear-gradient(90deg,rgba(8,8,7,.7),rgba(8,8,7,.48) 58%,rgba(8,8,7,.36))}
+.brand-hero__content,.brand-hero .stats{ text-shadow:0 2px 12px rgba(0,0,0,.32)}
+.brand-hero__seal{width:64px;height:64px;margin-bottom:16px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.18)}
+.veil[data-static]:has(.login-panel){align-items:center}
+.login-panel{width:min(100%,420px);padding:clamp(22px,5vw,32px);border-radius:14px}
+.login-panel .actions{gap:10px}
+.login-panel .actions .btn{flex:1;min-height:44px}
+@media(max-width:600px){
+  .brand-hero__seal{width:56px;height:56px;margin-bottom:13px}
+  .veil[data-static]:has(.login-panel){padding:16px}
+  .login-panel{width:100%;padding:22px}
+}
