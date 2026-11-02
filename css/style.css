@@ -17,7 +17,7 @@ header{position:sticky;top:0;z-index:30;padding-top:calc(env(safe-area-inset-top
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) header{background:rgba(18,19,15,.82)}}
 .hbar{display:flex;align-items:center;justify-content:space-between;padding:8px 0 12px;gap:12px;flex-wrap:nowrap}
 .brand{display:flex;align-items:center;gap:8px;text-decoration:none;min-width:0;flex:1 1 auto;overflow:hidden;color:var(--ink)}
-.brand img{height:30px;width:auto;flex:none;object-fit:contain}
+.brand img{height:34px;width:auto;flex:none;object-fit:contain;display:block}
 .brand span{font-family:'Anton';font-size:15px;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top-nav{display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:500;flex-wrap:nowrap;flex:none;padding:5px 8px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb, var(--card) 88%, var(--bg));box-shadow:0 8px 16px var(--shadow)}
 nav a{text-decoration:none;opacity:.9;cursor:pointer;white-space:nowrap;color:var(--ink)}
@@ -92,10 +92,13 @@ section{padding:36px 0}
 .brand-hero__backdrop::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg, rgba(10,8,6,.82), rgba(10,8,6,.38), rgba(10,8,6,.2))}
 .brand-hero__content,.brand-hero .stats{position:relative;z-index:1}
 .brand-hero__content{padding:30px 12px 12px 12px;max-width:540px}
+.brand-hero__seal{display:block;width:72px;height:72px;margin-bottom:12px;object-fit:contain;filter:drop-shadow(0 12px 20px rgba(0,0,0,.28));background:rgba(0,0,0,.12);border-radius:18px;padding:8px}
 .brand-hero__content h2{font-size:clamp(26px,7vw,64px);line-height:.93;margin:8px 0 14px;color:#fff}
 .brand-hero__content p{margin:0;color:rgba(255,255,255,.9);font-size:15px;line-height:1.7;max-width:52ch}
 .eyebrow{display:inline-block;padding:6px 10px;border:1px solid rgba(255,255,255,.25);border-radius:999px;background:rgba(250,245,238,.08);color:#fff;text-transform:uppercase;letter-spacing:.12em;font-size:10px;font-weight:700}
 .brand-hero .stats{padding:0 8px 14px}
+.brand-hero__backdrop{background-color:rgba(17,13,10,.36)}
+.brand-hero__backdrop::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg, rgba(10,8,6,.82), rgba(10,8,6,.52), rgba(10,8,6,.28));}
 .gallery-wrap{padding-top:32px;padding-bottom:32px}
 .gallery-header{padding:8px 0 20px}
 .gallery-header h1{font-size:clamp(28px,7vw,54px);margin:10px 0}
